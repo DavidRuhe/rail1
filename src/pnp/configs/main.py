@@ -6,6 +6,7 @@ config = {
     "deterministic": True,
     "device": "cuda",
     "command": ["python", "-u", "main.py", "configs/main.py", "${args}"],
+    "seed": 0,
     "dataset": {"name": "cifar10"},
     "model": {"name": "basic_cnn"},
     "optimizer": {"name": "adam"},

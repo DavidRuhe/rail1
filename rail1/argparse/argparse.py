@@ -26,6 +26,8 @@ def parse_args():
     config_path = argv[1]
     config = load_module.load_attribute_from_python_file(config_path, "config")
 
+    del config["parameters"]  # Don't need sweep parameters anymore.
+
     parser = argparse.ArgumentParser()
 
     parser = create_parser(config, None)
