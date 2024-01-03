@@ -66,7 +66,6 @@ def commit_files(sweep_id):  # pragma: no cover
         git push origin {sweep_id}
     """
     subprocess.check_call(command, shell=True)
-    breakpoint()
     # # Get the latest commit SHA
     # commit_sha = subprocess.getoutput("git rev-parse HEAD")
     # return commit_sha
@@ -175,8 +174,6 @@ def main():
         directory = None
 
     commit_files(sweep_id)
-
-    raise
 
     if on_cluster:
         raise NotImplementedError
