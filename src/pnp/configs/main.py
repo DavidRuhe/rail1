@@ -9,5 +9,5 @@ config = {
     "dataset": {"name": "cifar10"},
     "model": {"name": "basic_cnn"},
     "optimizer": {"name": "adam"},
-    "parameters": {"seed": {"values": [42]}},
+    "parameters": {"seed": {"values": [0, 1, 2, 3, 4]}},
 }

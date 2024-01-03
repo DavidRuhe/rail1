@@ -127,7 +127,7 @@ def fire(function):
     seed = config["seed"]
     deterministic = config.get("deterministic", False)
 
-    assert isinstance(seed, int)
+    assert isinstance(seed, int), type(seed)
     seed = utils.set_seed(seed, deterministic=deterministic)
     tempdir = tempfile.TemporaryDirectory()
 
