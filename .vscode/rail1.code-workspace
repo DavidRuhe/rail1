@@ -1,0 +1,44 @@
+{
+	"folders": [
+		{
+			"path": "../src/pnp"
+		},
+		{
+			"path": ".."
+		},
+		{
+			"path": "../src/p3"
+		}
+	],
+	"settings": {
+		"[python]": {
+			"editor.defaultFormatter": "ms-python.black-formatter"
+		},
+		"python.terminal.activateEnvironment": false,
+		"files.exclude": {
+			"**/.git": true,
+			"**/.svn": true,
+			"**/.hg": true,
+			"**/CVS": true,
+			"**/.DS_Store": true,
+			"**/Thumbs.db": true,
+			"**/__pycache__": true,
+			"**/.venv/": true,
+			"**/.ipynb_checkpoints/": true,
+			"**/*.ipynb": true,
+			"**/*.egg-info/": true,
+			"src/": true,
+		},
+		"python.analysis.typeCheckingMode": "basic",
+		"python.analysis.diagnosticSeverityOverrides": {
+			"reportMissingTypeStubs": "none",
+			"reportIncompatibleMethodOverride": "none",
+		},
+		"python.autoComplete.extraPaths": [
+			"."
+		],
+		"python.analysis.extraPaths": [
+			"."
+		]
+	}
+}

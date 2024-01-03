@@ -1,0 +1,8 @@
+.venv/
+.ipynb_checkpoints/
+*.egg-info
+*.pyc
+__pycache__/
+wandb/
+*.out
+activate.sh
