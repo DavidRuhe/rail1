@@ -5,7 +5,7 @@ config = {
     "method": "grid",
     "deterministic": True,
     "device": "cuda",
-    "command": ["python", "-u", "main.py", "configs/main.py"],
+    "command": ["python", "-u", "main.py", "configs/main.py", "${args}"],
     "dataset": {"name": "cifar10"},
     "model": {"name": "basic_cnn"},
     "optimizer": {"name": "adam"},
