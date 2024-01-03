@@ -136,6 +136,8 @@ def fire(function):
         dist_cfg = _ddp_setup()  # pragma: no cover
     config["dist"] = dist_cfg
 
+    breakpoint()
+
     wandb_cfg = None
     # if USE_WANDB:
     #     name = _add_sweep_name(name)

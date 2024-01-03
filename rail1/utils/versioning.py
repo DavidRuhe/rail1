@@ -10,4 +10,3 @@ def git_detached():
 def check_git_detached():
     if git_detached():
         raise RuntimeError(f"git is a detached HEAD. Please checkout a branch.")
-

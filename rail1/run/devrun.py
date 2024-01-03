@@ -7,7 +7,7 @@ from .run import process_args_and_load_config
 
 def main():
     versioning.check_git_detached()
-    config = process_args_and_load_config(sys.argv, devrun=True)
+    config, name, project, entity = process_args_and_load_config(sys.argv, devrun=True)
 
     parameters = config["parameters"]
     base_command = config["command"]
@@ -20,6 +20,8 @@ def main():
     #         base_command[i] = config["program"]
     #     elif c == "${args}":
     #         del base_command[i]
+
+    args = sys.argv[2:]
 
     for k, v in parameters.items():
         parameters[k] = parameters[k]["values"]
@@ -39,6 +41,7 @@ def main():
             if result != 0:
                 break
     else:
+        raise NotImplementedError
         command = " ".join([base_command, config_path] + args)
         subprocess.call(command, shell=True)
 

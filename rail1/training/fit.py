@@ -248,9 +248,14 @@ def fit(
                 last_global_step = train_state["global_step"]
 
                 if "test_loader" in data:
-                    raise NotImplementedError("test_loader not implemented yet.")
-                    test_loop(model, optimizer, test_loader, validation=False)
-                    should_test = False
+                    test_loop(
+                        train_state,
+                        model,
+                        forward_and_loss_fn,
+                        data["test_loader"],
+                        eval_metrics_fns,
+                        log_metrics_fn,
+                    )
 
                 if run_dir is not None:
                     checkpoint.checkpoint(model, optimizer)
