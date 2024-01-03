@@ -186,7 +186,6 @@ def main():
         )
 
     else:
-        breakpoint()
         print(f"Run this sweep with:")
         print(f"git checkout {sweep_id} && {command}")
 
