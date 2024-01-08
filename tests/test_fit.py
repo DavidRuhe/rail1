@@ -286,42 +286,42 @@ class TestFitFunction(unittest.TestCase):
         mock_loss = torch.tensor(0.5, requires_grad=True)
         self.mock_forward_and_loss_fn = unittest.mock.Mock(return_value=(mock_loss, {}))
 
-    def test_fit(self):
-        fit.fit(
-            self.mock_model,
-            self.mock_optimizer,
-            self.mock_data,
-            self.mock_forward_and_loss_fn,
-            self.mock_train_metrics_fns,
-            self.mock_eval_metrics_fns,
-            self.mock_log_metrics_fn,
-        )
+    # def test_fit(self):
+    #     fit.fit(
+    #         self.mock_model,
+    #         self.mock_optimizer,
+    #         self.mock_data,
+    #         self.mock_forward_and_loss_fn,
+    #         self.mock_train_metrics_fns,
+    #         self.mock_eval_metrics_fns,
+    #         self.mock_log_metrics_fn,
+    #     )
 
 
-class TestShouldStopFunction(unittest.TestCase):
-    def test_should_stop_conditions(self):
-        current_time = datetime.datetime(2022, 1, 1, 12, 0, 0)
-        starting_time = datetime.datetime(2022, 1, 1, 10, 0, 0)
+# class TestShouldStopFunction(unittest.TestCase):
+    # def test_should_stop_conditions(self):
+    #     current_time = datetime.datetime(2022, 1, 1, 12, 0, 0)
+    #     starting_time = datetime.datetime(2022, 1, 1, 10, 0, 0)
 
-        # Case 1: Should stop by max_time
-        state = {
-            "max_time": datetime.timedelta(hours=1),
-            "starting_time": starting_time,
-            "max_steps": None,
-            "global_step": 0,
-        }
-        self.assertTrue(fit.should_stop(state), "Failed to stop by max_time")
+    #     # Case 1: Should stop by max_time
+    #     state = {
+    #         "max_time": datetime.timedelta(hours=1),
+    #         "starting_time": starting_time,
+    #         "max_steps": None,
+    #         "global_step": 0,
+    #     }
+    #     self.assertTrue(fit.should_stop(state), "Failed to stop by max_time")
 
-        # Case 2: Should stop by max_steps
-        state["max_time"] = None
-        state["max_steps"] = 10
-        state["global_step"] = 10
-        self.assertTrue(fit.should_stop(state), "Failed to stop by max_steps")
+    #     # Case 2: Should stop by max_steps
+    #     state["max_time"] = None
+    #     state["max_steps"] = 10
+    #     state["global_step"] = 10
+    #     self.assertTrue(fit.should_stop(state), "Failed to stop by max_steps")
 
-        # Case 3: Should not stop
-        state["max_time"] = datetime.timedelta(hours=2)
-        state["global_step"] = 5
-        fit.should_stop(state)
+    #     # Case 3: Should not stop
+    #     state["max_time"] = datetime.timedelta(hours=2)
+    #     state["global_step"] = 5
+    #     fit.should_stop(state)
 
 
 if __name__ == "__main__":

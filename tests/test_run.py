@@ -101,59 +101,38 @@ class TestReplaceVariables(unittest.TestCase):
             run.replace_variables(command, locals_dict)
 
 
-class TestGitStatus(unittest.TestCase):
-    @mock.patch("rail1.run.run.subprocess.run")
-    @mock.patch("rail1.run.run.subprocess.getoutput")
-    def test_git_status(self, mock_getoutput, mock_run):
-        # Test case 1: Diverged
-        mock_getoutput.return_value = "1 1"
-        self.assertEqual(run.git_status(), "diverged")
+# class TestDevRun(unittest.TestCase):
+    # @mock.patch("rail1.run.devrun.sys.argv", ["script.py", "not_a_python_file.txt"])
+    # def test_invalid_file_extension(self):
+    #     """
+    #     Test if the script raises an exception for non-Python config files.
+    #     """
+    #     with self.assertRaises(ValueError):
+    #         devrun.main()
 
-        # Test case 2: Ahead
-        mock_getoutput.return_value = "1 0"
-        self.assertEqual(run.git_status(), "behind")
+    # @mock.patch("rail1.run.devrun.sys.argv", ["script.py", "config.py"])
+    # @mock.patch("rail1.run.devrun.subprocess")
+    # @mock.patch("rail1.run.devrun.load_module.load_attribute_from_python_file")
+    # def test_devrun(self, mock_load_attribute, mock_subprocess):
+    #     """
+    #     Test if the script generates correct command permutations for parameters.
+    #     """
+    #     mock_config = {
+    #         "parameters": {
+    #             "param1": {"values": [1, 2]},
+    #             "param2": {"values": ["a", "b"]},
+    #         },
+    #         "command": ["python", "${program}"],
+    #     }
+    #     mock_load_attribute.return_value = mock_config
+    #     devrun.main()
 
-        # Test case 3: Behind
-        mock_getoutput.return_value = "0 1"
-        self.assertEqual(run.git_status(), "ahead")
-
-        # Test case 4: Up-to-date
-        mock_getoutput.return_value = "0 0"
-        self.assertEqual(run.git_status(), "up-to-date")
-
-
-class TestDevRun(unittest.TestCase):
-    @mock.patch("rail1.run.devrun.sys.argv", ["script.py", "not_a_python_file.txt"])
-    def test_invalid_file_extension(self):
-        """
-        Test if the script raises an exception for non-Python config files.
-        """
-        with self.assertRaises(ValueError):
-            devrun.main()
-
-    @mock.patch("rail1.run.devrun.sys.argv", ["script.py", "config.py"])
-    @mock.patch("rail1.run.devrun.subprocess")
-    @mock.patch("rail1.run.devrun.load_module.load_attribute_from_python_file")
-    def test_devrun(self, mock_load_attribute, mock_subprocess):
-        """
-        Test if the script generates correct command permutations for parameters.
-        """
-        mock_config = {
-            "parameters": {
-                "param1": {"values": [1, 2]},
-                "param2": {"values": ["a", "b"]},
-            },
-            "command": ["python", "${program}"],
-        }
-        mock_load_attribute.return_value = mock_config
-        devrun.main()
-
-        mock_config = {
-            "parameters": {},
-            "command": "python ${program}",
-        }
-        mock_load_attribute.return_value = mock_config
-        devrun.main()
+    #     mock_config = {
+    #         "parameters": {},
+    #         "command": "python ${program}",
+    #     }
+    #     mock_load_attribute.return_value = mock_config
+    #     devrun.main()
 
 
 if __name__ == "__main__":

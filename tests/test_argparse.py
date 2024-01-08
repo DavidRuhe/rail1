@@ -22,6 +22,7 @@ class TestArgumentParsing(unittest.TestCase):
         mock_load_attribute.return_value = {
             "section1": {"param1": 1, "param2": "value"},
             "param3": 2.0,
+            "parameters": {"seed": {"values": [0]}},
         }
 
         config = argparse.parse_args()

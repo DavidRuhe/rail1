@@ -1,7 +1,7 @@
 {
 	"folders": [
 		{
-			"path": "../src/pnp"
+			"path": "../src/example_project"
 		},
 		{
 			"path": ".."
@@ -28,6 +28,7 @@
 			"**/*.ipynb": true,
 			"**/*.egg-info/": true,
 			"src/": true,
+			"src": true,
 		},
 		"python.analysis.typeCheckingMode": "basic",
 		"python.analysis.diagnosticSeverityOverrides": {

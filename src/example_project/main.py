@@ -22,6 +22,7 @@ def mean_loss(metric_dicts):
 
 
 def main(config):
+    run_dir = config["run_dir"]
     dataset_config = config["dataset"]
     data = getattr(rail1.datasets, dataset_config.pop("name"))(**dataset_config)
     model = getattr(models, config["model"].pop("name"))(**config["model"])
@@ -33,6 +34,7 @@ def main(config):
     model = model.to(device)
 
     fit.fit(
+        run_dir,
         model,
         optimizer,
         data,
@@ -40,6 +42,7 @@ def main(config):
         train_metrics_fns=(mean_loss,),
         eval_metrics_fns=(mean_loss,),
         log_metrics_fn=None,
+        **config["fit"],
     )
 
     # if config["dist"] is not None:

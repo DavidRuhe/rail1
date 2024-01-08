@@ -1,0 +1,16 @@
+config = {
+    "name": "cifar10",
+    "project": "example_project",
+    "entity": "druhe",
+    "method": "grid",
+    "deterministic": True,
+    "device": "cuda",
+    "command": ["python", "-u", "main.py", "config/example_config.py", "${args}"],
+    "seed": 0,
+    "continue": None,
+    "dataset": {"name": "cifar10", "batch_size": 8},
+    "model": {"name": "basic_cnn"},
+    "optimizer": {"name": "adam"},
+    "fit": {"max_steps": float('inf'), "print_interval": 1, "limit_val_batches": 1},
+    "parameters": {"seed": {"values": [0]}},
+}

@@ -15,7 +15,11 @@ def create_parser(d, parser=None, prefix=""):
         if isinstance(v, dict):
             create_parser(v, parser.add_argument_group(k), f"{k}.")
         else:
-            parser.add_argument(f"--{prefix + k}", default=v, type=type(v))
+            parser.add_argument(
+                f"--{prefix + k}",
+                default=v,
+                type=type(v) if v is not None else None,  # type: ignore
+            )
 
     return parser
 

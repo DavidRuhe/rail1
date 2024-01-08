@@ -4,6 +4,8 @@ import random
 import numpy
 import torch
 import torch.distributed
+import re
+import wandb
 
 
 # class Checkpoint:
@@ -131,8 +133,37 @@ import torch.distributed
 #                     )
 #                 trainer.should_test = True
 
+def split_path(file, k):
+    f = file
+    for _ in range(k):
+        f = os.path.split(f)[0]
+    return f
 
-def checkpoint(path, model, train_state, optimizer):
+def save_wandb(file):
+
+    # Method 1
+    # if wandb.run is not None:
+    #     wandb.save(file, base_path = split_path(file, 2))
+
+    # Method 2
+    name = str(wandb.run.id) + "-" + "checkpoint"
+    artifact = wandb.Artifact(name, type="checkpoint")
+    artifact.add_file(file)
+    wandb.log_artifact(artifact)
+
+    # Remove old artifacts
+    # project = wandb.run.project
+    # entity = wandb.run.entity
+    # id = wandb.run.id
+    # run = wandb.Api().run(f"{entity}/{project}/{id}")
+    # for v in run.logged_artifacts():
+    #         if len(v.aliases) == 0:
+    #             v.delete()
+
+
+
+
+def checkpoint(checkpoint_dir, model, train_state, optimizer, metrics=None):
     # if trainer.logger is None:
     #     print(f"No logger found, skipping checkpoint.")
     #     return
@@ -140,8 +171,12 @@ def checkpoint(path, model, train_state, optimizer):
     # if trainer.logger.dir is None:
     #     print("Logger has no directory, skipping checkpoint.")
     #     return
+    if not os.path.exists(checkpoint_dir):
+        os.makedirs(checkpoint_dir)
 
     is_distributed = torch.distributed.is_initialized()
+    if is_distributed:
+        raise NotImplementedError("Should support multiple random states.")
     should_write = torch.distributed.get_rank() == 0 if is_distributed else True
 
     model_state_dict = (
@@ -151,11 +186,13 @@ def checkpoint(path, model, train_state, optimizer):
     )
 
     random_state = {
-        "seed": torch.initial_seed(),
         "torch": torch.get_rng_state(),
         "numpy": numpy.random.get_state(),
         "random": random.getstate(),
+        "cuda": torch.cuda.get_rng_state(),
+        "cuda_all": torch.cuda.get_rng_state_all(),
     }
+
 
     checkpoint = {
         "model": model_state_dict,
@@ -164,8 +201,26 @@ def checkpoint(path, model, train_state, optimizer):
         "random_state": random_state,
     }
 
+    if metrics is not None:
+        metrics_str = "-".join([f"{k}={v:.4f}" for k, v in metrics.items()])
+        metrics_str = metrics_str.replace("/", "_")
+        filename = os.path.join(
+            checkpoint_dir,
+            f"step={train_state['global_step']}-epoch={train_state['current_epoch']}-{metrics_str}.pt",
+        )
+    else:
+        filename = os.path.join(
+            checkpoint_dir,
+            f"step={train_state['global_step']}-epoch={train_state['current_epoch']}.pt",
+        )
+
     if should_write:
-        torch.save(checkpoint, path)
+        torch.save(checkpoint, filename)
+        if wandb.run is not None:
+            save_wandb(filename)
+            os.remove(filename)
+        print(f"Successfully saved checkpoint to {filename}")
+
     #     trainer.logger.save_model(save_path, alias=alias)
 
     #     if m in self.save_paths:
@@ -176,3 +231,48 @@ def checkpoint(path, model, train_state, optimizer):
     #         f"Metric {m} improved to {metrics[m]:.4f}, saving checkpoint. Saved checkpoint to {save_path}. Initializing test loop."
     #     )
     # trainer.should_test = True
+
+def get_sorted_checkpoints(checkpoint_dir):
+
+    checkpoints = os.listdir(checkpoint_dir)
+    try:
+        steps = [int(c.split("-")[0].split("=")[1]) for c in checkpoints]
+    except IndexError as e:
+        print(f"Could not process checkpoints {checkpoints}")
+        raise e
+    checkpoints.sort(key=dict(zip(checkpoints, steps)).get)
+    return checkpoints
+
+
+
+def load_checkpoint(checkpoint_dir, model, train_state, optimizer):
+
+    is_distributed = torch.distributed.is_initialized()
+    if is_distributed:
+        raise NotImplementedError("Should support multiple random states.")
+
+    checkpoints = get_sorted_checkpoints(checkpoint_dir)
+    checkpoint = checkpoints[-1]
+
+    checkpoint_path = os.path.join(checkpoint_dir, checkpoint)
+
+    state_dict = torch.load(checkpoint_path)
+
+    model_state_dict = state_dict["model"]
+    optimizer_state_dict = state_dict["optimizer"]
+    train_state_dict = state_dict["train_state"]
+    random_state_dict = state_dict["random_state"]
+
+    model.load_state_dict(model_state_dict)
+    optimizer.load_state_dict(optimizer_state_dict)
+    train_state.update(train_state_dict)
+
+    torch.set_rng_state(random_state_dict["torch"])
+    torch.cuda.set_rng_state(random_state_dict["cuda"])
+    torch.cuda.set_rng_state_all(random_state_dict["cuda_all"])
+    numpy.random.set_state(random_state_dict["numpy"])
+    random.setstate(random_state_dict["random"])
+
+    print(f"\nSuccessfully restored complete state from: {checkpoint_path}\n")
+
+    return train_state

@@ -1,7 +1,9 @@
+import shutil
 import subprocess
+from distutils import dir_util
 import os
 import socket
-import tempfile
+import yaml
 
 import torch
 import torch.distributed as dist
@@ -15,6 +17,21 @@ USE_WANDB = (
 import wandb
 
 USE_DISTRIBUTED = "NCCL_SYNC_FILE" in os.environ or "TORCHELASTIC_RUN_ID" in os.environ
+
+import datetime
+import random
+import string
+
+
+def generate_run_id():
+    return "".join(random.choices(string.ascii_lowercase + string.digits, k=7))
+
+
+def generate_dirname(run_id):
+    now = datetime.datetime.now()
+    date_time = now.strftime("%Y%m%d_%H%M%S")
+    name = f"run-{date_time}-{run_id}"
+    return name
 
 
 def _add_sweep_name(name: str) -> str:
@@ -101,17 +118,18 @@ def _ddp_setup():
 
 
 def _setup_wandb(*args, **kwargs):
-    sweep_id = os.environ["WANDB_SWEEP_ID"]
+    if "WANDB_SWEEP_ID" in os.environ:
+        sweep_id = os.environ["WANDB_SWEEP_ID"]
 
-    commit_hash = subprocess.getoutput("git rev-parse HEAD")
+        commit_hash = subprocess.getoutput("git rev-parse HEAD")
 
-    # Get the tag associated with that commit, if it exists
-    tag = subprocess.getoutput(f"git tag --contains {commit_hash}")
+        # Get the tag associated with that commit, if it exists
+        tag = subprocess.getoutput(f"git tag --contains {commit_hash}")
 
-    if tag != sweep_id:
-        raise RuntimeError(
-            f"Tag {tag} does not match sweep id {sweep_id}. Commit hash: {commit_hash}."
-        )
+        if tag != sweep_id:
+            raise RuntimeError(
+                f"Tag {tag} does not match sweep id {sweep_id}. Commit hash: {commit_hash}."
+            )
 
     if dist.is_initialized():
         should_initialize = dist.get_rank() == 0
@@ -122,34 +140,75 @@ def _setup_wandb(*args, **kwargs):
         return wandb.init(*args, **kwargs)
 
 
+def assert_equal_dictionaries(d1, d2, exceptions=()):
+    symmetric_difference = set(d1.keys()) ^ set(d2.keys())
+    if len(symmetric_difference) > 0:
+        raise ValueError(f"Keys do not match: {symmetric_difference}")
+
+    for k in d1.keys():
+        if k in exceptions:
+            continue
+        if isinstance(d1[k], dict):
+            assert_equal_dictionaries(d1[k], d2[k], exceptions=exceptions)
+        elif d1[k] != d2[k]:
+            raise ValueError(f"Values do not match for key {k}: {d1[k]} != {d2[k]}")
+
+
 def fire(function):
     config = argparse.parse_args()
+
+    config["cwd"] = os.getcwd()
+    run_dir = os.path.join(os.getcwd(), "runs")
+    if not os.path.exists(run_dir):
+        os.makedirs(run_dir)
+
     seed = config["seed"]
-    deterministic = config.get("deterministic", False)
+    deterministic = config["deterministic"]
 
     assert isinstance(seed, int), type(seed)
     seed = utils.set_seed(seed, deterministic=deterministic)
-    tempdir = tempfile.TemporaryDirectory()
 
+    # Distributed
     dist_cfg = None
     if USE_DISTRIBUTED:
         dist_cfg = _ddp_setup()  # pragma: no cover
     config["dist"] = dist_cfg
 
-    print(os.environ)
-
-    raise
-
+    name = config["name"]
     wandb_cfg = None
-    # if USE_WANDB:
-    #     name = _add_sweep_name(name)
-    #     wandb_kwargs = dict(
-    #         config=config.copy(),
-    #         dir=tempdir.name,
-    #         name=name,
-    #     )
-    #     wandb_cfg = _setup_wandb(**wandb_kwargs)
+    if USE_WANDB:
+        name = _add_sweep_name(name)
+        wandb_kwargs = dict(
+            config=config.copy(),
+            name=name,
+            dir=run_dir,
+        )
+        wandb_cfg = _setup_wandb(**wandb_kwargs)
+
+    if wandb_cfg is not None:
+        files_dir = wandb_cfg.dir
+        run_dir = os.path.dirname(files_dir)
+    else:
+        run_id = generate_run_id()
+        files_dir = os.path.join(run_dir, "devrun", generate_dirname(run_id), "files")
+        os.makedirs(files_dir, exist_ok=True)
+        run_dir = os.path.dirname(files_dir)
+        yaml.dump(config, open(os.path.join(run_dir, "config.yaml"), "w"))
+
+    if config["continue"] is not None:
+        continue_dir = config["continue"]
+        continue_config = yaml.load(
+            open(os.path.join(continue_dir, "config.yaml"), "r"), Loader=yaml.FullLoader
+        )
+        assert_equal_dictionaries(
+            config, continue_config, exceptions=["continue", "max_steps"]
+        )
+        dir_util.copy_tree(continue_dir, run_dir)
+
+    print("\nSaving files to", run_dir, "\n")
+
     config["wandb"] = wandb_cfg
+    config["run_dir"] = run_dir
 
     function(config)
 
@@ -164,6 +223,6 @@ def fire(function):
     #             v.delete()
 
     #     wandb.finish()  # type: ignore
-    tempdir.cleanup()
+    # tempdir.cleanup()
     if dist.is_initialized():
         dist.destroy_process_group()  # pragma: no cover

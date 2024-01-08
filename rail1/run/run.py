@@ -137,7 +137,7 @@ def process_args_and_load_config(argv, devrun=False):
             if cont.lower() != "y":
                 raise RuntimeError("Aborting.")
 
-    if len(argv) != 2:
+    if not devrun and len(argv) != 2 and "-h" not in argv:
         raise ValueError(
             f"Usage: sweep <config.yaml>. Please don't provide any other arguments."
         )

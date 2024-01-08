@@ -1,11 +1,13 @@
+import random
+import os
 import time
 from collections import defaultdict
 
 import torch
 from torch import nn
-from torch.utils.data import sampler
 
 from rail1.utils import printing
+from rail1.utils import math as math_utils
 from rail1.callbacks import checkpoint
 import datetime
 
@@ -51,12 +53,14 @@ def test_loop(
     test_loader,
     metric_fns,
     log_metrics_fn,
+    limit_batches=float("inf"),
     validation=False,
     print_interval=32,
 ):
     model.eval()
 
-    num_iterations = int(min(len(test_loader), train_state["limit_val_batches"]))
+    num_test_batches = math_utils.ceildiv(len(test_loader.dataset), test_loader.batch_size)
+    num_iterations = min(num_test_batches, limit_batches)
     assert num_iterations > 0
     t0 = time.time()
 
@@ -71,10 +75,9 @@ def test_loop(
         print_str = "Testing"
         prefix = "test"
 
-    for batch_idx, batch in enumerate(test_loader):
-        if batch_idx >= train_state["limit_val_batches"]:
-            break
+    for batch_idx in range(num_iterations):
 
+        batch = test_loader[batch_idx]
         batch = to_device(batch, train_state["device"])
         _, outputs = forward_and_loss_fn(batch, model)
 
@@ -106,6 +109,8 @@ def test_loop(
     if log_metrics_fn is not None:
         log_metrics_fn(metrics, step=train_state["global_step"])
 
+    return metrics
+
 
 def train_step(
     train_state, model, optimizer, forward_and_loss_fn, batch, print_interval=32
@@ -132,44 +137,51 @@ def train_step(
         print(f"Step: {train_state['global_step']} (Training) Loss: {loss:.4f}")
 
 
-def should_stop(state):
+def should_stop(state, max_steps=None, max_time=None):
     if (
-        state["max_time"] is not None
-        and state["max_time"] < datetime.datetime.now() - state["starting_time"]
+        max_time is not None
+        and max_time < datetime.datetime.now() - state["starting_time"]
     ):
         print("Stopping due to max_time.")
         return True
-    if state["max_steps"] is not None and state["global_step"] >= state["max_steps"]:
-        print("Stopping due to max_steps.")
+    if max_steps is not None and state["global_step"] >= max_steps:
+        print(f"Stopping due to max_steps ({max_steps})")
         return True
     return False
 
 
 def fit(
+    run_dir,
     model,
     optimizer,
-    data,
+    datasets,
     forward_and_loss_fn,
     train_metrics_fns,
     eval_metrics_fns,
     log_metrics_fn,
-    run_dir=None,
     scheduler=None,
-    log_interval=32,
+    print_interval=32,
     val_check_interval=1024,
     skip_initial_eval=False,
     limit_val_batches=float("inf"),
+    max_steps=1,
+    max_time=None,
 ):
+
+    if max_time is not None:
+        raise NotImplementedError("max_time is not implemented yet.")
     device = next(model.parameters()).device
 
     if torch.cuda.is_available() and not device.type == "cuda":
         print("CUDA is available but not being used.")
 
-    train_loader = data["train_loader"]
-    if not isinstance(train_loader.sampler, sampler.RandomSampler):
-        raise ValueError(
-            "Training loader has a non-random sampler!"
-        )  # pragma: no cover
+    train_loader = datasets["train_loader"]
+    # if not isinstance(
+    #     train_loader.sampler, data.InfiniteRandomSampler
+    # ):  # pragma: no cover
+    #     print(
+    #         "\nWARNING: Training does not use InfiniteRandomSampler, deterministic training disabled."
+    #     )
 
     print("\nModel Summary\n---")
     print(model)
@@ -178,91 +190,144 @@ def fit(
     t0 = time.time()
 
     train_state = {
-        "run_dir": run_dir,
         "global_step": 0,
         "last_global_step": 0,
         "should_raise": None,
         "current_epoch": 0,
         "device": device,
         "train_metrics": defaultdict(list),
-        "limit_val_batches": float("inf"),
-        "max_time": None,
-        "max_steps": 1,
     }
 
-    while not should_stop(train_state):
+    checkpoint_dir = os.path.join(run_dir, "files", "checkpoints")
+    if os.path.exists(checkpoint_dir):
+        print("Loading previous checkpoint")
+        checkpoint.load_checkpoint(
+            checkpoint_dir,
+            model,
+            train_state,
+            optimizer,
+        )
+        # breakpoint()
+
+    keep_training = not should_stop(train_state, max_steps)
+    # keep_training = True
+    while keep_training:
         # if self.is_distributed:
         #     train_loader.sampler.set_epoch(self.current_epoch)
-        for batch in train_loader:
-            train_step(train_state, model, optimizer, forward_and_loss_fn, batch)
+        # for batch in train_loader:
+        # for batch_idx in range(max_steps)
+        batch = train_loader[train_state['global_step']]
 
-            if scheduler is not None:
-                scheduler.step()  # pragma: no cover
+        # print(batch[0][0].sum())
+        # print(batch[0][-1].sum())
+        # if train_state['global_step'] == 8:
+            # breakpoint()
+        train_step(train_state, model, optimizer, forward_and_loss_fn, batch, print_interval)
 
-            lr = optimizer.param_groups[0]["lr"]
+        if scheduler is not None:
+            raise NotImplementedError
+            scheduler.step()  # pragma: no cover
 
-            if train_state["global_step"] % log_interval == 0:
-                t1 = time.time()
-                # if self.is_distributed:
-                #     train_metrics = model.module.train_metrics.compute()
-                #     model.module.train_metrics.reset()
-                # else:
-                train_metrics = apply_metric_fns(
-                    train_state["train_metrics"], train_metrics_fns
+        lr = optimizer.param_groups[0]["lr"]
+
+        if train_state["global_step"] % print_interval == 0:
+            t1 = time.time()
+            # if self.is_distributed:
+            #     train_metrics = model.module.train_metrics.compute()
+            #     model.module.train_metrics.reset()
+            # else:
+            train_metrics = apply_metric_fns(
+                train_state["train_metrics"], train_metrics_fns
+            )
+            s_it = (t1 - t0) / (
+                train_state["global_step"] + 1 - train_state["last_global_step"]
+            )
+            train_metrics["s_it"] = s_it
+            train_metrics["lr"] = lr
+            train_metrics["epoch"] = train_state["current_epoch"]
+
+            if log_metrics_fn is not None:
+                train_metrics = printing.add_prefix(train_metrics, "train")
+                log_metrics_fn(train_metrics, step=train_state["global_step"])
+            train_state["train_metrics"].clear()
+
+            t0 = time.time()
+            train_state["last_global_step"] = train_state["global_step"]
+
+        should_validate = train_state["global_step"] % val_check_interval == 0 and (
+            train_state["global_step"] > 0 if skip_initial_eval else True
+        )
+
+        if should_validate:
+            val_metrics = None
+            if datasets["val_loader"] is not None and limit_val_batches > 0:
+                if train_state["global_step"] == 0 and skip_initial_eval:
+                    print("Skipping initial evaluation.")  # pragma: no cover
+                
+                val_metrics = test_loop(
+                    train_state,
+                    model,
+                    forward_and_loss_fn,
+                    datasets["val_loader"],
+                    eval_metrics_fns,
+                    log_metrics_fn,
+                    validation=True,
+                    limit_batches=limit_val_batches,
                 )
-                s_it = (t1 - t0) / (
-                    train_state["global_step"] + 1 - train_state["last_global_step"]
+
+            t0 = time.time()
+            train_state["last_global_step"] = train_state["global_step"]
+
+            if datasets["test_loader"] is not None and limit_val_batches > 0:
+                test_loop(
+                    train_state,
+                    model,
+                    forward_and_loss_fn,
+                    datasets["test_loader"],
+                    eval_metrics_fns,
+                    log_metrics_fn,
+                    limit_batches=limit_val_batches,
                 )
-                train_metrics["s_it"] = s_it
-                train_metrics["lr"] = lr
-                train_metrics["epoch"] = train_state["current_epoch"]
 
-                if log_metrics_fn is not None:
-                    train_metrics = printing.add_prefix(train_metrics, "train")
-                    log_metrics_fn(train_metrics, step=train_state["global_step"])
-                train_state["train_metrics"].clear()
-
-                t0 = time.time()
-                train_state["last_global_step"] = train_state["global_step"]
-
-            should_validate = train_state["global_step"] % val_check_interval == 0 and (
-                train_state["global_step"] > 0 if skip_initial_eval else True
+            checkpoint.checkpoint(
+                checkpoint_dir,
+                model,
+                train_state,
+                optimizer,
+                metrics=val_metrics,
             )
 
-            if should_validate:
-                if data["val_loader"] is not None and limit_val_batches > 0:
-                    if train_state["global_step"] == 0 and skip_initial_eval:
-                        print("Skipping initial evaluation.")  # pragma: no cover
+        train_state["global_step"] += 1
+        train_state['batch_index'] = train_state['global_step'] * train_loader.batch_size // len(train_loader.dataset)
 
-                    test_loop(
-                        train_state,
-                        model,
-                        forward_and_loss_fn,
-                        data["val_loader"],
-                        eval_metrics_fns,
-                        log_metrics_fn,
-                        validation=True,
-                    )
+        if train_state["should_raise"] is not None:
+            raise train_state["should_raise"]  # pragma: no cover
 
-                t0 = time.time()
-                last_global_step = train_state["global_step"]
+        if should_stop(train_state, max_steps):
+            val_metrics = None
+            if datasets["val_loader"] is not None and limit_val_batches > 0:
+                val_metrics = test_loop(
+                    train_state,
+                    model,
+                    forward_and_loss_fn,
+                    datasets["val_loader"],
+                    eval_metrics_fns,
+                    log_metrics_fn,
+                    validation=True,
+                    limit_batches=limit_val_batches,
+                )
+            # breakpoint()
+            checkpoint.checkpoint(
+                checkpoint_dir,
+                model,
+                train_state,
+                optimizer,
+                metrics=val_metrics,
+            )
+            keep_training = False
+            break
 
-                if "test_loader" in data:
-                    test_loop(
-                        train_state,
-                        model,
-                        forward_and_loss_fn,
-                        data["test_loader"],
-                        eval_metrics_fns,
-                        log_metrics_fn,
-                    )
 
-                if run_dir is not None:
-                    checkpoint.checkpoint(model, optimizer)
-
-            train_state["global_step"] += 1
-
-            if train_state["should_raise"] is not None:
-                raise train_state["should_raise"]  # pragma: no cover
-
-        train_state["current_epoch"] += 1
+    for k, v in datasets.items():
+        if v is not None:
+            v.close()
