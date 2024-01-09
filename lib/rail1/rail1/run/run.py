@@ -119,7 +119,7 @@ def git_status():  # pragma: no cover
         return "up-to-date"
 
 
-def process_args_and_load_config(argv, devrun=False):
+def process_args_and_load_config(argv, devrun=False):  # pragma: no cover
     versioning.check_git_detached()
 
     if not devrun:
@@ -131,7 +131,7 @@ def process_args_and_load_config(argv, devrun=False):
         else:
             warning = None
 
-        if warning is not None:
+        if warning is not None:  # pragma: no cover
             warnings.warn(warning)
             cont = input("Continue? [y/N]")
             if cont.lower() != "y":
