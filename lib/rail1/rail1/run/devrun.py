@@ -1,11 +1,13 @@
 import itertools
 import subprocess
 import sys
-from rail1.utils import versioning, load_module
+
+from rail1.utils import load_module, versioning
+
 from .run import process_args_and_load_config
 
 
-def main():
+def main():  # pragma: no cover
     versioning.check_git_detached()
     config, name, project, entity = process_args_and_load_config(sys.argv, devrun=True)
 
