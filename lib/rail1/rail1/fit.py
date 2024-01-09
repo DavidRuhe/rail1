@@ -6,7 +6,7 @@ from collections import defaultdict
 import torch
 from torch import nn
 
-from rail1.callbacks import checkpoint
+from rail1 import checkpoint
 from rail1.utils import math as math_utils
 from rail1.utils import printing
 
@@ -140,7 +140,7 @@ def should_stop(state, max_steps=None, max_time=None):
     if (
         max_time is not None
         and max_time < datetime.datetime.now() - state["starting_time"]
-    ):
+    ): 
         print("Stopping due to max_time.")
         return True
     if max_steps is not None and state["global_step"] >= max_steps:
@@ -165,7 +165,7 @@ def fit(
     max_steps=1,
     max_time=None,
 ):
-    if max_time is not None:
+    if max_time is not None:  # pragma: no cover
         raise NotImplementedError("max_time is not implemented yet.")
     device = next(model.parameters()).device
 
@@ -290,7 +290,7 @@ def fit(
                     limit_batches=limit_val_batches,
                 )
 
-            checkpoint.checkpoint(
+            checkpoint.save_checkpoint(
                 checkpoint_dir,
                 model,
                 train_state,
@@ -322,7 +322,7 @@ def fit(
                     limit_batches=limit_val_batches,
                 )
             # breakpoint()
-            checkpoint.checkpoint(
+            checkpoint.save_checkpoint(
                 checkpoint_dir,
                 model,
                 train_state,

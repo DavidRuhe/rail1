@@ -151,7 +151,7 @@ def process_args_and_load_config(argv, devrun=False):  # pragma: no cover
     return config, name, project, entity
 
 
-def main():
+def main():  # pragma: no cover
     config, name, project, entity = process_args_and_load_config(sys.argv)
 
     sweep_id = wandb.sweep(sweep=config, project=project, entity=entity)

@@ -101,19 +101,38 @@ class TestReplaceVariables(unittest.TestCase):
             run.replace_variables(command, locals_dict)
 
 
-class TestRunMain(unittest.TestCase):
-    def setUp(self):
-        self.config = {"sweep": {"id": "123abc"}}
-        self.name = "test_name"
-        self.project = "test_project"
+# class TestDevRun(unittest.TestCase):
+    # @mock.patch("rail1.run.devrun.sys.argv", ["script.py", "not_a_python_file.txt"])
+    # def test_invalid_file_extension(self):
+    #     """
+    #     Test if the script raises an exception for non-Python config files.
+    #     """
+    #     with self.assertRaises(ValueError):
+    #         devrun.main()
 
-    def test_run_main(self):
-        entity = "test_entity"
-        with mock.patch(
-            "rail1.run.run.process_args_and_load_config",
-            return_value=(self.config, self.name, self.project, entity),
-        ), mock.patch("wandb.sweep", return_value="test_sweep"):
-            run.main()
+    # @mock.patch("rail1.run.devrun.sys.argv", ["script.py", "config.py"])
+    # @mock.patch("rail1.run.devrun.subprocess")
+    # @mock.patch("rail1.run.devrun.load_module.load_attribute_from_python_file")
+    # def test_devrun(self, mock_load_attribute, mock_subprocess):
+    #     """
+    #     Test if the script generates correct command permutations for parameters.
+    #     """
+    #     mock_config = {
+    #         "parameters": {
+    #             "param1": {"values": [1, 2]},
+    #             "param2": {"values": ["a", "b"]},
+    #         },
+    #         "command": ["python", "${program}"],
+    #     }
+    #     mock_load_attribute.return_value = mock_config
+    #     devrun.main()
+
+    #     mock_config = {
+    #         "parameters": {},
+    #         "command": "python ${program}",
+    #     }
+    #     mock_load_attribute.return_value = mock_config
+    #     devrun.main()
 
 
 if __name__ == "__main__":

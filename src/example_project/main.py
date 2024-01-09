@@ -1,9 +1,7 @@
 import torch
 import models
 import torch.nn.functional as F
-import rail1
-from rail1 import fire
-from rail1.training import fit
+from rail1 import fit, fire, datasets, optimizers
 
 
 def forward_and_loss_fn(batch, model):
@@ -17,16 +15,16 @@ def mean_key(metric_dicts, key):
     return {key: torch.mean(torch.cat(metric_dicts[key]))}
 
 
-def mean_loss(metric_dicts):
+def mean_loss(metric_dicts, is_training):
     return mean_key(metric_dicts, "loss")
 
 
 def main(config):
     run_dir = config["run_dir"]
     dataset_config = config["dataset"]
-    data = getattr(rail1.datasets, dataset_config.pop("name"))(**dataset_config)
+    data = getattr(datasets, dataset_config.pop("name"))(**dataset_config)
     model = getattr(models, config["model"].pop("name"))(**config["model"])
-    optimizer = getattr(rail1.optimizers, config["optimizer"].pop("name"))(
+    optimizer = getattr(optimizers, config["optimizer"].pop("name"))(
         model, **config["optimizer"]
     )
 
