@@ -9,6 +9,7 @@
 		{
 			"path": "../src/p3"
 		}
+		{"path": "../lib/rail1/"}
 	],
 	"settings": {
 		"[python]": {

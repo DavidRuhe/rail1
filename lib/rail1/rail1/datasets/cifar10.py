@@ -11,7 +11,7 @@ DATAROOT = os.environ["DATAROOT"]
 #         self.dataset = dataset
 #         self.batch_size = batch_size
 #         self.sampler = sampler
-        
+
 #     def __iter__(self):
 
 #         sampler_iter = iter(self.sampler)
@@ -36,22 +36,28 @@ def load_cifar10(batch_size=128, num_workers=0, num_prefetch=0):
     #     root=DATAROOT, train=False, download=True, transform=transforms.ToTensor()
     # )
 
-    def collate_fn(batch):
+    def collate_fn(batch):  # pragma: no cover
         images, labels = zip(*batch)
         images = torch.stack(images) / 255
         labels = torch.tensor(labels)
         return images, labels
 
     train_loader = batchloader.BatchLoader(
-        cifar10_train, collate_fn=collate_fn, batch_size=batch_size, num_workers=num_workers, n_prefetch=num_prefetch, shuffle=True
+        cifar10_train,
+        collate_fn=collate_fn,
+        batch_size=batch_size,
+        num_workers=num_workers,
+        n_prefetch=num_prefetch,
+        shuffle=True,
     )
     test_loader = batchloader.BatchLoader(
-        cifar10_train, collate_fn=collate_fn, batch_size=batch_size, num_workers=num_workers, n_prefetch=num_prefetch, shuffle=True
+        cifar10_train,
+        collate_fn=collate_fn,
+        batch_size=batch_size,
+        num_workers=num_workers,
+        n_prefetch=num_prefetch,
+        shuffle=True,
     )
-
-
-
-
 
     # train_loader = data.DataLoader(
     #     cifar10_train, batch_size=batch_size, sampler=InfiniteRandomSampler(cifar10_train)

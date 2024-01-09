@@ -4,7 +4,6 @@ import random
 import numpy
 import torch
 import torch.distributed
-import re
 import wandb
 
 
@@ -133,11 +132,7 @@ import wandb
 #                     )
 #                 trainer.should_test = True
 
-def split_path(file, k):
-    f = file
-    for _ in range(k):
-        f = os.path.split(f)[0]
-    return f
+
 
 def save_wandb(file):
 
@@ -163,7 +158,7 @@ def save_wandb(file):
 
 
 
-def checkpoint(checkpoint_dir, model, train_state, optimizer, metrics=None):
+def save_checkpoint(checkpoint_dir, model, train_state, optimizer, metrics=None):
     # if trainer.logger is None:
     #     print(f"No logger found, skipping checkpoint.")
     #     return
@@ -237,7 +232,7 @@ def get_sorted_checkpoints(checkpoint_dir):
     checkpoints = os.listdir(checkpoint_dir)
     try:
         steps = [int(c.split("-")[0].split("=")[1]) for c in checkpoints]
-    except IndexError as e:
+    except IndexError as e:  # pragma: no cover
         print(f"Could not process checkpoints {checkpoints}")
         raise e
     checkpoints.sort(key=dict(zip(checkpoints, steps)).get)
@@ -248,7 +243,7 @@ def get_sorted_checkpoints(checkpoint_dir):
 def load_checkpoint(checkpoint_dir, model, train_state, optimizer):
 
     is_distributed = torch.distributed.is_initialized()
-    if is_distributed:
+    if is_distributed:  # pragma: no cover
         raise NotImplementedError("Should support multiple random states.")
 
     checkpoints = get_sorted_checkpoints(checkpoint_dir)

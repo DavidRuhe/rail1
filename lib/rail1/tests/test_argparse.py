@@ -1,9 +1,9 @@
 import unittest
 from unittest.mock import patch
-import rail1.argparse.argparse as argparse
+from rail1 import argparse
 
 
-class TestArgumentParsing(unittest.TestCase):
+class TestArgparse(unittest.TestCase):
     def test_create_parser_with_empty_dict(self):
         parser = argparse.create_parser({})
         self.assertIsNotNone(parser)
@@ -14,7 +14,7 @@ class TestArgumentParsing(unittest.TestCase):
         self.assertIsNotNone(parser)
 
     @patch(
-        "rail1.argparse.argparse.sys.argv",
+        "rail1.argparse.sys.argv",
         ["script_name", "config_path", "--section1.param1", "10", "--param3", "3.0"],
     )
     @patch("rail1.utils.load_module.load_attribute_from_python_file")

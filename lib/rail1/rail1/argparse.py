@@ -26,7 +26,6 @@ def create_parser(d, parser=None, prefix=""):
 
 def parse_args():
     argv = sys.argv
-    print(argv)
     config_path = argv[1]
     config = load_module.load_attribute_from_python_file(config_path, "config")
 

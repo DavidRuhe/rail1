@@ -8,7 +8,7 @@ import yaml
 import torch
 import torch.distributed as dist
 
-from rail1.argparse import argparse
+from rail1 import argparse
 from rail1 import utils
 
 USE_WANDB = (
@@ -140,19 +140,20 @@ def _setup_wandb(*args, **kwargs):
         return wandb.init(*args, **kwargs)
 
 
-def assert_equal_dictionaries(d1, d2, exceptions=()):
-    symmetric_difference = set(d1.keys()) ^ set(d2.keys())
-    if len(symmetric_difference) > 0:
-        raise ValueError(f"Keys do not match: {symmetric_difference}")
+def restore_wandb(run_dir, config):
 
-    for k in d1.keys():
-        if k in exceptions:
-            continue
-        if isinstance(d1[k], dict):
-            assert_equal_dictionaries(d1[k], d2[k], exceptions=exceptions)
-        elif d1[k] != d2[k]:
-            raise ValueError(f"Values do not match for key {k}: {d1[k]} != {d2[k]}")
+    api = wandb.Api()
+    run = api.run(config['continue'])
 
+    for file in run.files():
+        file.download(root=os.path.join(run_dir, 'files'), replace=True)  # point to run_dir
+
+
+    for artifact in run.logged_artifacts():
+        if artifact.type == 'checkpoint':
+            artifact.download(root=os.path.join(run_dir, 'files', 'checkpoints'))
+
+    config['continue'] = run_dir
 
 def fire(function):
     config = argparse.parse_args()
@@ -178,10 +179,14 @@ def fire(function):
     wandb_cfg = None
     if USE_WANDB:
         name = _add_sweep_name(name)
+        assert 'project' in config
+        assert 'entity' in config
         wandb_kwargs = dict(
             config=config.copy(),
             name=name,
             dir=run_dir,
+            project=config["project"],
+            entity=config["entity"],
         )
         wandb_cfg = _setup_wandb(**wandb_kwargs)
 
@@ -196,14 +201,10 @@ def fire(function):
         yaml.dump(config, open(os.path.join(run_dir, "config.yaml"), "w"))
 
     if config["continue"] is not None:
-        continue_dir = config["continue"]
-        continue_config = yaml.load(
-            open(os.path.join(continue_dir, "config.yaml"), "r"), Loader=yaml.FullLoader
-        )
-        assert_equal_dictionaries(
-            config, continue_config, exceptions=["continue", "max_steps"]
-        )
-        dir_util.copy_tree(continue_dir, run_dir)
+        if wandb_cfg is not None:
+            restore_wandb(run_dir, config)
+        else:
+            dir_util.copy_tree(config['continue'], run_dir)
 
     print("\nSaving files to", run_dir, "\n")
 

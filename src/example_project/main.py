@@ -39,8 +39,7 @@ def main(config):
         optimizer,
         data,
         forward_and_loss_fn=forward_and_loss_fn,
-        train_metrics_fns=(mean_loss,),
-        eval_metrics_fns=(mean_loss,),
+        metrics_fns=(mean_loss,),
         log_metrics_fn=None,
         **config["fit"],
     )
