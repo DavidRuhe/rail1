@@ -99,7 +99,7 @@ def replace_variables(command, locals):
     return command
 
 
-def git_status():
+def git_status():  # pragma: no cover
     # Fetch the remote changes without applying them
     subprocess.run(
         ["git", "fetch"], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
