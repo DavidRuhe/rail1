@@ -1,0 +1,16 @@
+config = {
+    "name": "reverse",
+    "project": "eqvit",
+    "entity": "druhe",
+    "method": "grid",
+    "deterministic": True,
+    "device": "cuda",
+    "command": ["python", "-u", "reverse.py", "config/reverse.py", "${args}"],
+    "seed": 0,
+    "continue": None,
+    "dataset": {"name": "reverse", "batch_size": 128, "num_classes": 10},
+    "model": {"name": "reverse_transformer"},
+    "optimizer": {"name": "adam"},
+    "fit": {"max_steps": float("inf")},
+    "parameters": {"seed": {"values": [0]}},
+}
