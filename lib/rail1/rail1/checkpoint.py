@@ -197,7 +197,7 @@ def save_checkpoint(checkpoint_dir, model, train_state, optimizer, metrics=None)
     }
 
     if metrics is not None:
-        metrics_str = "-".join([f"{k}={v:.4f}" for k, v in metrics.items()])
+        metrics_str = "-".join([f"{k}={v:.4f}" for k, v in metrics.items() if isinstance(v, (float, int))])
         metrics_str = metrics_str.replace("/", "_")
         filename = os.path.join(
             checkpoint_dir,

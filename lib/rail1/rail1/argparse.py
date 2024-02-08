@@ -1,9 +1,10 @@
-import argparse
 import sys
+import argparse
 
-from rail1.utils import dictionary
+from rail1.utils import python
 from rail1.utils import printing
 from rail1.utils import load_module
+
 
 
 def create_parser(d, parser=None, prefix=""):
@@ -36,7 +37,7 @@ def parse_args():
     parser = create_parser(config, None)
     args = parser.parse_args(argv[2:])
 
-    config = dictionary.unflatten(vars(args))
+    config = python.unflatten_dict(vars(args))
 
     print("\nConfiguration\n---")
     printing.pretty_dict(config)

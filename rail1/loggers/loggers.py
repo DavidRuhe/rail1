@@ -39,6 +39,14 @@ class WANDBLogger:
         image_dict = {k: wandb.Image(v) for k, v in image_dict.items()}
         return self._log(image_dict, step)
 
+    def log_plt(self, plt, step):
+        return self._log({"chart": plt}, step)
+
+    def log_all(self, dict, step):
+        for k, v in dict.items():
+            breakpoint()
+
+
     def save(self, file):
         if not self.initialized:
             print("Not saving because WANDB is not initialized.")

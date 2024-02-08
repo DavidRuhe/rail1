@@ -9,3 +9,9 @@ activate.sh
 runs/
 notebooks/
 .coverage
+*.so
+*.o
+*.ninja
+*.ninja_log
+*.ninja_deps
+*.egg

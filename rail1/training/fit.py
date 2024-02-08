@@ -4,7 +4,8 @@ import time
 from collections import defaultdict
 
 import torch
-from torch import nn
+from torch import nn, utils
+
 
 from rail1.callbacks import checkpoint
 from rail1.utils import math as math_utils
@@ -51,7 +52,7 @@ def test_loop(
     forward_and_loss_fn,
     test_loader,
     metric_fns,
-    log_metrics_fn,
+    logging_fn,
     limit_batches=float("inf"),
     validation=False,
     print_interval=32,
@@ -61,7 +62,7 @@ def test_loop(
     num_test_batches = math_utils.ceildiv(
         len(test_loader.dataset), test_loader.batch_size
     )
-    num_iterations = min(num_test_batches, limit_batches)
+    num_iterations = int(min(num_test_batches, limit_batches))
     assert num_iterations > 0
     t0 = time.time()
 
@@ -106,10 +107,12 @@ def test_loop(
 
     metrics = printing.add_prefix(metrics, prefix)
 
-    if log_metrics_fn is not None:
-        log_metrics_fn(metrics, step=train_state["global_step"])
+    if logging_fn is not None:
+        logging_fn(metrics, step=train_state["global_step"])
 
     return metrics
+
+
 
 
 def train_step(
@@ -122,6 +125,11 @@ def train_step(
 
     optimizer.zero_grad(set_to_none=True)
     loss.backward()
+
+    gradient_norm = utils.clip_grad_norm_(model.parameters(), float('inf'))
+
+    result['gradient_norm'] = gradient_norm
+
     optimizer.step()
 
     if torch.isnan(loss) or torch.isinf(loss):
@@ -156,7 +164,7 @@ def fit(
     datasets,
     forward_and_loss_fn,
     metrics_fns,
-    log_metrics_fn,
+    logging_fn,
     scheduler=None,
     print_interval=32,
     val_check_interval=1024,
@@ -182,7 +190,8 @@ def fit(
 
     print("\nModel Summary\n---")
     print(model)
-    print(f"Total parameters: {printing.human_format_float(count_parameters(model))}\n")
+    total_parameters = count_parameters(model)
+    print(f"Total parameters: {printing.human_format_float(total_parameters)}\n")
 
     t0 = time.time()
 
@@ -193,6 +202,7 @@ def fit(
         "current_epoch": 0,
         "device": device,
         "train_metrics": defaultdict(list),
+        "total_parameters": total_parameters,
     }
 
     checkpoint_dir = os.path.join(run_dir, "files", "checkpoints")
@@ -234,10 +244,9 @@ def fit(
             #     train_metrics = model.module.train_metrics.compute()
             #     model.module.train_metrics.reset()
             # else:
+            breakpoint()
             train_metrics = apply_metric_fns(
-                train_state["train_metrics"],
-                metrics_fns,
-                is_training=True
+                train_state["train_metrics"], metrics_fns, is_training=True
             )
             s_it = (t1 - t0) / (
                 train_state["global_step"] + 1 - train_state["last_global_step"]
@@ -246,9 +255,9 @@ def fit(
             train_metrics["lr"] = lr
             train_metrics["epoch"] = train_state["current_epoch"]
 
-            if log_metrics_fn is not None:
+            if logging_fn is not None:
                 train_metrics = printing.add_prefix(train_metrics, "train")
-                log_metrics_fn(train_metrics, step=train_state["global_step"])
+                logging_fn(train_metrics, step=train_state["global_step"])
             train_state["train_metrics"].clear()
 
             t0 = time.time()
@@ -257,7 +266,6 @@ def fit(
         should_validate = train_state["global_step"] % val_check_interval == 0 and (
             train_state["global_step"] > 0 if skip_initial_eval else True
         )
-
 
         if should_validate:
             val_metrics = None
@@ -271,7 +279,7 @@ def fit(
                     forward_and_loss_fn,
                     datasets["val_loader"],
                     metrics_fns,
-                    log_metrics_fn,
+                    logging_fn,
                     validation=True,
                     limit_batches=limit_val_batches,
                 )
@@ -286,7 +294,7 @@ def fit(
                     forward_and_loss_fn,
                     datasets["test_loader"],
                     metrics_fns,
-                    log_metrics_fn,
+                    logging_fn,
                     limit_batches=limit_val_batches,
                 )
 
@@ -317,11 +325,10 @@ def fit(
                     forward_and_loss_fn,
                     datasets["val_loader"],
                     metrics_fns,
-                    log_metrics_fn,
+                    logging_fn,
                     validation=True,
                     limit_batches=limit_val_batches,
                 )
-            # breakpoint()
             checkpoint.checkpoint(
                 checkpoint_dir,
                 model,

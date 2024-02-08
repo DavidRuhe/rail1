@@ -1,15 +1,20 @@
 {
 	"folders": [
+		// {
+		// 	"path": "../src/example_project",
+		// },
 		{
-			"path": "../src/example_project"
+			"path": "../src/eqvit",
 		},
 		{
-			"path": ".."
+			"path": "../lib/rail1/"
 		},
 		{
-			"path": "../src/p3"
+			"path": "../src/cuda/"
+		},
+		{
+			"path": "../src/cnf/"
 		}
-		{"path": "../lib/rail1/"}
 	],
 	"settings": {
 		"[python]": {
@@ -26,10 +31,10 @@
 			"**/__pycache__": true,
 			"**/.venv/": true,
 			"**/.ipynb_checkpoints/": true,
-			"**/*.ipynb": true,
+			"**/*.ipynb": false,
 			"**/*.egg-info/": true,
-			"src/": true,
-			"src": true,
+			"lib/": true,
+			"src/": false,
 		},
 		"python.analysis.typeCheckingMode": "basic",
 		"python.analysis.diagnosticSeverityOverrides": {
@@ -43,5 +48,51 @@
 			"."
 		],
 		"terminal.integrated.copyOnSelection": true,
+		"files.associations": {
+			"iostream": "cpp",
+			"array": "cpp",
+			"atomic": "cpp",
+			"bit": "cpp",
+			"*.tcc": "cpp",
+			"cctype": "cpp",
+			"clocale": "cpp",
+			"cmath": "cpp",
+			"cstdarg": "cpp",
+			"cstddef": "cpp",
+			"cstdint": "cpp",
+			"cstdio": "cpp",
+			"cstdlib": "cpp",
+			"cwchar": "cpp",
+			"cwctype": "cpp",
+			"deque": "cpp",
+			"unordered_map": "cpp",
+			"vector": "cpp",
+			"exception": "cpp",
+			"algorithm": "cpp",
+			"functional": "cpp",
+			"iterator": "cpp",
+			"memory": "cpp",
+			"memory_resource": "cpp",
+			"numeric": "cpp",
+			"optional": "cpp",
+			"random": "cpp",
+			"string": "cpp",
+			"string_view": "cpp",
+			"system_error": "cpp",
+			"tuple": "cpp",
+			"type_traits": "cpp",
+			"utility": "cpp",
+			"fstream": "cpp",
+			"initializer_list": "cpp",
+			"iosfwd": "cpp",
+			"istream": "cpp",
+			"limits": "cpp",
+			"new": "cpp",
+			"ostream": "cpp",
+			"sstream": "cpp",
+			"stdexcept": "cpp",
+			"streambuf": "cpp",
+			"typeinfo": "cpp"
+		},
 	}
 }

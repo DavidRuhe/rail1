@@ -1,0 +1,18 @@
+config = {
+    "name": "mnist_epd",
+    "project": "eqvit",
+    "entity": "druhe",
+    "method": "grid",
+    "deterministic": True,
+    "device": "cuda",
+    "command": ["python", "-u", "mnist_epd.py", "config/mnist_epd.py", "${args}"],
+    "seed": 0,
+    "continue": None,
+    "dataset": {"name": "mnist", "batch_size": 128},
+    "model": {"name": "mnist_epd"},
+    "optimizer": {"name": "adam", "lr": 5e-4},
+    # "optimizer": {"name": "radam", "lr": 5e-4},
+    "scheduler": {"max_steps": 100000, "warmup_steps": 10000, "decay_steps": 30000},
+    "fit": {"max_steps": float("inf")},
+    "parameters": {"seed": {"values": [0]}},
+}
