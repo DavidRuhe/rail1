@@ -133,8 +133,7 @@ import wandb
 #                 trainer.should_test = True
 
 
-
-def save_wandb(file):
+def save_wandb(file, metadata=None):
 
     # Method 1
     # if wandb.run is not None:
@@ -142,7 +141,7 @@ def save_wandb(file):
 
     # Method 2
     name = str(wandb.run.id) + "-" + "checkpoint"
-    artifact = wandb.Artifact(name, type="checkpoint")
+    artifact = wandb.Artifact(name, type="checkpoint", metadata=metadata)
     artifact.add_file(file)
     wandb.log_artifact(artifact)
 
@@ -154,8 +153,6 @@ def save_wandb(file):
     # for v in run.logged_artifacts():
     #         if len(v.aliases) == 0:
     #             v.delete()
-
-
 
 
 def save_checkpoint(checkpoint_dir, model, train_state, optimizer, metrics=None):
@@ -188,7 +185,6 @@ def save_checkpoint(checkpoint_dir, model, train_state, optimizer, metrics=None)
         "cuda_all": torch.cuda.get_rng_state_all(),
     }
 
-
     checkpoint = {
         "model": model_state_dict,
         "optimizer": optimizer.state_dict(),
@@ -196,8 +192,18 @@ def save_checkpoint(checkpoint_dir, model, train_state, optimizer, metrics=None)
         "random_state": random_state,
     }
 
+    def get_scalar(v):
+        if isinstance(v, (float, int)):
+            return v
+        elif isinstance(v, torch.Tensor) and v.dim() == 0:
+            return v.cpu().item()
+        
+    scalar_metrics = None
     if metrics is not None:
-        metrics_str = "-".join([f"{k}={v:.4f}" for k, v in metrics.items() if isinstance(v, (float, int))])
+        scalar_metrics = {
+            k: get_scalar(v) for k, v in metrics.items() if get_scalar(v) is not None
+        }
+        metrics_str = "-".join([f"{k}={v:.4f}" for k, v in scalar_metrics.items()])
         metrics_str = metrics_str.replace("/", "_")
         filename = os.path.join(
             checkpoint_dir,
@@ -212,7 +218,7 @@ def save_checkpoint(checkpoint_dir, model, train_state, optimizer, metrics=None)
     if should_write:
         torch.save(checkpoint, filename)
         if wandb.run is not None:
-            save_wandb(filename)
+            save_wandb(filename, metadata={'filename': filename})
             os.remove(filename)
         print(f"Successfully saved checkpoint to {filename}")
 
@@ -227,6 +233,7 @@ def save_checkpoint(checkpoint_dir, model, train_state, optimizer, metrics=None)
     #     )
     # trainer.should_test = True
 
+
 def get_sorted_checkpoints(checkpoint_dir):
 
     checkpoints = os.listdir(checkpoint_dir)
@@ -237,7 +244,6 @@ def get_sorted_checkpoints(checkpoint_dir):
         raise e
     checkpoints.sort(key=dict(zip(checkpoints, steps)).get)
     return checkpoints
-
 
 
 def load_checkpoint(checkpoint_dir, model, train_state, optimizer):
@@ -259,7 +265,8 @@ def load_checkpoint(checkpoint_dir, model, train_state, optimizer):
     random_state_dict = state_dict["random_state"]
 
     model.load_state_dict(model_state_dict)
-    optimizer.load_state_dict(optimizer_state_dict)
+    if optimizer is not None:
+        optimizer.load_state_dict(optimizer_state_dict)
     train_state.update(train_state_dict)
 
     torch.set_rng_state(random_state_dict["torch"])

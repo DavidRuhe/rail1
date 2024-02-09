@@ -261,8 +261,6 @@ def fit(
         if scheduler is not None:
             scheduler.step()  # pragma: no cover
 
-        lr = optimizer.param_groups[0]["lr"]
-
         if train_state["global_step"] % print_interval == 0:
             t1 = time.time()
             # if self.is_distributed:
@@ -276,7 +274,10 @@ def fit(
                 train_state["global_step"] + 1 - train_state["last_global_step"]
             )
             train_metrics["s_it"] = s_it
+
+            lr = optimizer.param_groups[0]["lr"]
             train_metrics["lr"] = lr
+
             train_metrics["epoch"] = train_state["current_epoch"]
 
             train_metrics["grad_norm_mean"] = sum(

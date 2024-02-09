@@ -51,7 +51,7 @@ class WANDBLogger:
                 if v.ndim == 0:
                     self.log_metrics({k: v}, step)
                 elif v.ndim == 3:
-                    self.log_image({k: v.numpy()}, step)
+                    self.log_image({k: v.cpu().numpy()}, step)
                 else:
                     raise ValueError(f"Can't log tensor {k} of shape {v.shape}.")
             elif isinstance(v, (float, int)):

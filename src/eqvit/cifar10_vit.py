@@ -93,7 +93,7 @@ def get_attention_maps(model, x, mask=None, add_positional_encoding=True):
     return attention_maps
 
 
-def plot_images(imgs):
+def plot_images(imgs, is_training):
     DATA_MEANS = np.array([0.485, 0.456, 0.406])
     DATA_STD = np.array([0.229, 0.224, 0.225])
 

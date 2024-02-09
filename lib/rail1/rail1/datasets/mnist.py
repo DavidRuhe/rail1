@@ -25,7 +25,7 @@ def load_mnist(batch_size=128, num_workers=0, num_prefetch=0):
         shuffle=True,
     )
     test_loader = batchloader.BatchLoader(
-        mnist_train,
+        mnist_test,
         collate_fn=collate.default_collate,
         batch_size=batch_size,
         num_workers=num_workers,
@@ -37,4 +37,6 @@ def load_mnist(batch_size=128, num_workers=0, num_prefetch=0):
         "train_loader": train_loader,
         "test_loader": test_loader,
         "val_loader": test_loader,
+        "train_dataset": mnist_train,
+        "test_dataset": mnist_test,
     }

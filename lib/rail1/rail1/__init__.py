@@ -5,3 +5,4 @@ from . import loggers
 from . import schedulers
 from .fire import fire
 from .fit import fit
+from . import metrics

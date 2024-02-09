@@ -3,15 +3,15 @@
 		// {
 		// 	"path": "../src/example_project",
 		// },
-		{
-			"path": "../src/eqvit",
-		},
+		// {
+		// "path": "../src/eqvit",
+		// },
 		{
 			"path": "../lib/rail1/"
 		},
-		{
-			"path": "../src/cuda/"
-		},
+		// {
+		// "path": "../src/cuda/"
+		// },
 		{
 			"path": "../src/cnf/"
 		}
@@ -94,5 +94,6 @@
 			"streambuf": "cpp",
 			"typeinfo": "cpp"
 		},
+		"jupyter.notebookFileRoot": " ${fileDirname}",
 	}
 }
