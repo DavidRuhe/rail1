@@ -14,7 +14,10 @@
 		// },
 		{
 			"path": "../src/cnf/"
-		}
+		},
+		// {
+		// 	"path": "../env/"
+		// }
 	],
 	"settings": {
 		"[python]": {

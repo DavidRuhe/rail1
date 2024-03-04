@@ -16,6 +16,17 @@ def unflatten_dict(dictionary, sep="."):
     return result
 
 
+def flatten_dict(d, parent_key="", sep="."):
+    items = []
+    for k, v in d.items():
+        new_key = f"{parent_key}{sep}{k}" if parent_key else k
+        if isinstance(v, dict):
+            items.extend(flatten_dict(v, new_key, sep).items())
+        else:
+            items.append((new_key, v))
+    return dict(items)
+
+
 # From PyTorch internals
 def _ntuple(n):
     def parse(x):

@@ -47,7 +47,10 @@ class BatchLoader:
                 indices = self.list_of_indices[index]
             return self.collate_fn([self.dataset[i] for i in indices])
         else:  # pragma: no cover
-            for batch_index in range(index, index + self.n_prefetch + 1):
+            prefetch_index = index + self.n_prefetch + 1
+            if not self.shuffle:
+                prefetch_index = min(prefetch_index, len(self.list_of_indices) - 1)
+            for batch_index in range(index, prefetch_index):
                 if batch_index in self.batch_buffer:  # pragma: no cover
                     continue
                 self.batch_buffer[batch_index] = dict()
@@ -55,7 +58,10 @@ class BatchLoader:
                 if self.shuffle:
                     indices = [rng.randint(0, len(self.dataset) - 1) for _ in range(self.batch_size)]
                 else:
-                    indices = self.list_of_indices[batch_index]
+                    try:
+                        indices = self.list_of_indices[batch_index]
+                    except:
+                        breakpoint()
                 local_indices = list(range(len(indices)))
 
                 for local_index, data_index in zip(local_indices, indices):

@@ -38,7 +38,7 @@ if [ ! -d "$VENV_DIR" ]; then
     python3 -m venv $VENV_DIR --system-site-packages
     source $VENV_DIR/bin/activate
     pip install -r requirements.txt
-    cd $ROOT && pip install -e . && cd -
+    cd $ROOT/lib/rail1/ && pip install -e . && cd -
 else
     source $VENV_DIR/bin/activate
 fi

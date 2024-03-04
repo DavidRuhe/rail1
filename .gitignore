@@ -4,8 +4,8 @@
 *.pyc
 __pycache__/
 wandb/
+baselines/
 *.out
-activate.sh
 runs/
 notebooks/
 .coverage
@@ -16,3 +16,4 @@ notebooks/
 *.ninja_deps
 *.egg
 *.pt
+

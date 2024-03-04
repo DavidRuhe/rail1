@@ -1,0 +1,23 @@
+config = {
+    "name": "mnist_field_decoder",
+    "project": "cnf",
+    "entity": "druhe",
+    "method": "grid",
+    "deterministic": True,
+    "device": "cuda",
+    "command": [
+        "python",
+        "-u",
+        "mnist_field_decoder.py",
+        "config/mnist_field_decoder.py",
+        "${args}",
+    ],
+    "seed": 0,
+    "continue": None,
+    "dataset": {"name": "embedded_mnist", "batch_size": 128},
+    "model": {"name": "mnist_field_decoder"},
+    "optimizer": {"name": "adam", "lr": 5e-4},
+    "scheduler": {"max_steps": 100_000, "warmup_steps": 1000, "decay_steps": 30000},
+    "fit": {"max_steps": 100_000},
+    "parameters": {"seed": {"values": [0]}},
+}

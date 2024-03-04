@@ -31,7 +31,6 @@ def main():  # pragma: no cover
     if parameters:
         keys, values = zip(*parameters.items())
         permutations_dicts = [dict(zip(keys, v)) for v in itertools.product(*values)]
-
         for d in permutations_dicts:
             print("\nRunning with configuration:")
             print(d)

@@ -1,16 +1,16 @@
 import datetime
 import os
-from collections import defaultdict
-import matplotlib.pyplot as plt
 import time
+from collections import defaultdict
 
+import matplotlib.pyplot as plt
+import numpy as np
 import torch
 from torch import nn
 
 from rail1 import checkpoint
 from rail1.utils import math as math_utils
 from rail1.utils import printing
-
 
 # For distributed modules, can use patching to update the module to model.module as follows
 # def check_arguments(func):
@@ -35,6 +35,8 @@ def to_device(input, device, detach=True):
     elif isinstance(input, dict):
         keys = input.keys()
     elif isinstance(input, plt.Figure):
+        return input
+    elif isinstance(input, np.ndarray):
         return input
     else:
         input = input.to(device)
@@ -76,7 +78,7 @@ def test_loop(
     num_test_batches = math_utils.ceildiv(
         len(test_loader.dataset), test_loader.batch_size
     )
-    num_iterations = min(num_test_batches, limit_batches)
+    num_iterations = int(min(num_test_batches, limit_batches))
     assert num_iterations > 0
     t0 = time.time()
 
@@ -169,8 +171,7 @@ def train_step(
 
     append_to_metrics_(result, train_state["train_metrics"])
 
-    if train_state["global_step"] % print_interval == 0:
-        print(f"Step: {train_state['global_step']} (Training) Loss: {loss:.4f}")
+    return loss
 
 
 def should_stop(state, max_steps=None, max_time=None):
@@ -233,6 +234,7 @@ def fit(
         "device": device,
         "train_metrics": defaultdict(list),
         "total_parameters": total_parameters,
+        "starting_time": time.time(),
     }
 
     checkpoint_dir = os.path.join(run_dir, "files", "checkpoints")
@@ -296,6 +298,11 @@ def fit(
             )
 
             train_metrics["total_parameters"] = train_state["total_parameters"]
+
+            td = datetime.timedelta(seconds=t1 - train_state["starting_time"])
+            print(
+                f"{printing.format_timedelta(td, '[{d}-{h}:{m}:{s}]')} Step: {train_state['global_step']} [{1/s_it:.2f} it/s] (Training) Loss: {train_metrics['loss']:.4f}"
+            )
 
             if logging_fn is not None:
                 train_metrics = printing.add_prefix(train_metrics, "train")

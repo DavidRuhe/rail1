@@ -20,3 +20,16 @@ def human_format_float(num: float):
 
 def add_prefix(d, prefix):
     return {f"{prefix}/{k}": v for k, v in d.items()}
+
+
+def format_timedelta(td, format_str):
+    days = td.days
+    hours, remainder = divmod(td.seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+
+    formatted_str = format_str.replace("{d}", str(days))
+    formatted_str = formatted_str.replace("{h}", f"{hours:02d}")
+    formatted_str = formatted_str.replace("{m}", f"{minutes:02d}")
+    formatted_str = formatted_str.replace("{s}", f"{seconds:02d}")
+
+    return formatted_str
