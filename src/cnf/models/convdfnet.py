@@ -42,6 +42,7 @@ class ConvolutionalDFNetwork(nn.Module):
             input (tensor): the input
         """
 
+        breakpoint()
         if self.encoder is not None:
             c = self.encoder(inputs)
         else:
