@@ -11,9 +11,9 @@ dependencies:
   - torchaudio=0.12.1
   - torchvision=0.13.1
   - cudatoolkit=11.3
-  # - pytorch-cluster=1.6.0
   # - pytorch-sparse=0.6.16
   - pytorch-scatter=2.1.0
+  - pytorch-cluster=1.6.0
   # - pytorch-spline-conv=1.2.1
   # - pyg=2.3.0
   # - pip

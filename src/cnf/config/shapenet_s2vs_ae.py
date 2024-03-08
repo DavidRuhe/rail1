@@ -1,0 +1,35 @@
+config = {
+    "name": "shapenet_s2vs_ae",
+    "project": "cnf",
+    "entity": "druhe",
+    "method": "grid",
+    "deterministic": True,
+    "device": "cuda",
+    "command": [
+        "python",
+        "-u",
+        "shapenet_s2vs_ae.py",
+        "config/shapenet_s2vs_ae.py",
+        "${args}",
+    ],
+    "seed": 0,
+    "continue": None,
+    "dataset": dict(
+        name="shapenet_s2vs",
+        batch_size=24,
+    ),
+    "model": dict(
+        name="s2vs_autoencoder",
+        point_cloud_size=2048,
+    ),
+    "optimizer": {"name": "adamw", "lr": 1e-4},
+    # "scheduler": {"max/_steps": 100_000, "warmup_steps": 1000, "decay_steps": 30000},
+    # "scheduler": None,
+    "fit": {
+        "max_steps": 1_000_000,
+        "print_interval": 100,
+        "limit_val_batches": float("inf"),
+        "val_check_interval": 4096,
+    },
+    "parameters": {"seed": {"values": [0]}},
+}

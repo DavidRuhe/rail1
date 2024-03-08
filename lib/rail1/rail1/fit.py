@@ -256,7 +256,7 @@ def fit(
         # for batch_idx in range(max_steps)
         batch = train_loader[train_state["global_step"]]
 
-        train_step(
+        loss = train_step(
             train_state, model, optimizer, forward_and_loss_fn, batch, print_interval
         )
 
@@ -300,8 +300,9 @@ def fit(
             train_metrics["total_parameters"] = train_state["total_parameters"]
 
             td = datetime.timedelta(seconds=t1 - train_state["starting_time"])
+            loss_print = train_metrics["loss"] if "loss" in train_metrics else loss
             print(
-                f"{printing.format_timedelta(td, '[{d}-{h}:{m}:{s}]')} Step: {train_state['global_step']} [{1/s_it:.2f} it/s] (Training) Loss: {train_metrics['loss']:.4f}"
+                f"{printing.format_timedelta(td, '[{d}-{h}:{m}:{s}]')} Step: {train_state['global_step']} [{1/s_it:.2f} it/s] (Training) Loss: {loss_print:.4f}"
             )
 
             if logging_fn is not None:

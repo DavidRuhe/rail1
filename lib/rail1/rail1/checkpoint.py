@@ -197,12 +197,15 @@ def save_checkpoint(checkpoint_dir, model, train_state, optimizer, metrics=None)
             return v
         elif isinstance(v, torch.Tensor) and v.dim() == 0:
             return v.cpu().item()
-        
+
     scalar_metrics = None
     if metrics is not None:
         scalar_metrics = {
             k: get_scalar(v) for k, v in metrics.items() if get_scalar(v) is not None
         }
+        assert all(
+            v >= 0 for v in scalar_metrics.values()
+        ), "Only non-negative metrics are supported."
         metrics_str = "-".join([f"{k}={v:.4f}" for k, v in scalar_metrics.items()])
         metrics_str = metrics_str.replace("/", "_")
         filename = os.path.join(
@@ -218,7 +221,7 @@ def save_checkpoint(checkpoint_dir, model, train_state, optimizer, metrics=None)
     if should_write:
         torch.save(checkpoint, filename)
         if wandb.run is not None:
-            save_wandb(filename, metadata={'filename': filename})
+            save_wandb(filename, metadata={"filename": filename})
             os.remove(filename)
         print(f"Successfully saved checkpoint to {filename}")
 

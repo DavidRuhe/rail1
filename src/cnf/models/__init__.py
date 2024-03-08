@@ -2,7 +2,10 @@ from .autoencoder import Autoencoder
 from .cnf import ConditionalNeuralField
 from .modules.local_decoder import LocalDecoder
 from .modules.dgcnn_cls import DGCNN_cls
+from . import s2vs_ae
 from . import convdfnet
+
+
 def mnist_autoencoder():
     return Autoencoder(784, (512, 256, 128))
 
@@ -33,3 +36,38 @@ def shapenet_dfnet(c_dim, padding, encoder: dict, decoder: dict):
     model = convdfnet.ConvolutionalDFNetwork(dec, enc)
 
     return model
+
+
+def create_autoencoder(dim=512, M=512, latent_dim=64, N=2048, deterministic=False):
+    if deterministic:
+        raise NotImplementedError
+        model = AutoEncoder(
+            depth=24,
+            dim=dim,
+            queries_dim=dim,
+            output_dim=1,
+            num_inputs=N,
+            num_latents=M,
+            heads=8,
+            dim_head=64,
+        )
+    else:
+        model = s2vs_ae.KLAutoEncoder(
+            depth=24,
+            dim=dim,
+            queries_dim=dim,
+            output_dim=1,
+            num_inputs=N,
+            num_latents=M,
+            latent_dim=latent_dim,
+            heads=8,
+            dim_head=64,
+        )
+    return model
+
+
+def s2vs_autoencoder(point_cloud_size):
+
+    return create_autoencoder(
+        dim=512, M=512, latent_dim=8, N=point_cloud_size, deterministic=False
+    )
