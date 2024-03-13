@@ -503,3 +503,4 @@ def create_autoencoder(dim=512, M=512, latent_dim=64, N=2048, deterministic=Fals
             dim_head=64,
         )
     return model
+

@@ -5,6 +5,20 @@ from rail1.data import collate
 from .embedded_mnist import load_embedded_mnist
 from .shapenet import load_shapenet
 from .shapenet_s2vs import ShapeNet, AxisScaling
+from .toy_points import load_random_points_dataset
+
+
+def random_points(
+    n_points=1, dim=3, batch_size=128, num_workers=0, num_prefetch=0, return_basis=False,
+):
+    return load_random_points_dataset(
+        n_points=n_points,
+        dim=dim,
+        batch_size=batch_size,
+        num_workers=num_workers,
+        num_prefetch=num_prefetch,
+        return_basis=return_basis,
+    )
 
 
 def embedded_mnist(batch_size=128):
