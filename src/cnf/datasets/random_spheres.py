@@ -10,10 +10,6 @@ from rail1.data import collate
 DATAROOT = os.environ["DATAROOT"]
 
 
-
-
-
-
 # class RandomPoints(torch.utils.data.Dataset):
 
 #     def __init__(self, n_points=1, dim=3, return_basis=False):
@@ -55,3 +51,14 @@ DATAROOT = os.environ["DATAROOT"]
 
 def is_inside_sphere(x, r):
     return (x**2).sum(-1) < r**2
+
+
+CATEGORIES=['sphere']
+
+def generate_objects_dataset():
+
+    n_train = 1000
+    n_per_category = n_train // len(CATEGORIES)
+    data = []
+
+    

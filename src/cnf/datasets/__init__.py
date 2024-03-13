@@ -6,6 +6,7 @@ from .embedded_mnist import load_embedded_mnist
 from .shapenet import load_shapenet
 from .shapenet_s2vs import ShapeNet, AxisScaling
 from .toy_points import load_random_points_dataset
+from .random_surfaces import load_random_surface_dataset
 
 
 def random_points(
@@ -20,6 +21,15 @@ def random_points(
         return_basis=return_basis,
     )
 
+
+def random_surfaces(
+        n_points_per_shape=2048,
+        **kwargs,
+):
+    return load_random_surface_dataset(
+        n_points_per_shape=n_points_per_shape,
+        **kwargs,
+    )
 
 def embedded_mnist(batch_size=128):
     return load_embedded_mnist(

@@ -4,7 +4,7 @@ from .modules.local_decoder import LocalDecoder
 from .modules.dgcnn_cls import DGCNN_cls
 from . import s2vs_ae
 from . import convdfnet
-from .points_ae import RandomPointsAE
+from .points_ae import RandomPointsAE, RandomSurfacesMLP
 
 
 def mnist_autoencoder():
@@ -13,6 +13,9 @@ def mnist_autoencoder():
 
 def random_points_ae(n_points=1):
     return RandomPointsAE(n_points, (3 + n_points) ** 2, (512, 512, 384))
+
+def rso_baseline(n_points=1):
+    return RandomSurfacesMLP(n_points, 3, (512, 256, 128, 1))
 
 
 def mnist_field_decoder():

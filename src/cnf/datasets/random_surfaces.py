@@ -1,20 +1,18 @@
 import torch
 import torch.utils.data
 import os
-from torchvision import datasets, transforms
 import sys
-
-from rail1.data import batchloader
-from rail1.data import collate
 import numpy as np
+from rail1.data import batchloader
 
 DATAROOT = os.environ["DATAROOT"]
 
 
 def sample_sphere(npoints, r=1, ndim=3):
-    vec = np.random.randn(ndim, npoints)
-    vec *= r / np.linalg.norm(vec, axis=0)
+    vec = torch.randn(npoints, ndim)
+    vec *= r / torch.linalg.norm(vec, axis=1, keepdim=True)
     return vec
+
 
 class RandomSurfaces(torch.utils.data.Dataset):
 
@@ -25,11 +23,40 @@ class RandomSurfaces(torch.utils.data.Dataset):
         return sys.maxsize
 
     def __getitem__(self, idx):
-        positive = sample_sphere(self.n_points_per_shape // 2).T
-        negative = np.random.uniform(-1, 1, (self.n_points_per_shape // 2, 3))
-        return positive, negative
+        return sample_sphere(self.n_points_per_shape // 2)
 
 
+def load_random_surface_dataset(
+    n_points_per_shape=2048,
+    batch_size=128,
+    num_workers=0,
+    num_prefetch=0,
+):
+
+    train = RandomSurfaces(n_points_per_shape=n_points_per_shape)
+    test = RandomSurfaces(n_points_per_shape=n_points_per_shape)
+
+    train_loader = batchloader.BatchLoader(
+        train,
+        batch_size=batch_size,
+        num_workers=num_workers,
+        n_prefetch=num_prefetch,
+        shuffle=True,
+    )
+
+    test_loader = batchloader.BatchLoader(
+        test,
+        batch_size=batch_size,
+        num_workers=num_workers,
+        n_prefetch=num_prefetch,
+        shuffle=True,
+    )
+
+    return {
+        "train_loader": train_loader,
+        "val_loader": None,
+        "test_loader": test_loader,
+    }
 
 
 # def load_random_points_dataset(
@@ -49,8 +76,3 @@ class RandomSurfaces(torch.utils.data.Dataset):
 #         "val_loader": None,
 #         "test_loader": None,
 #     }
-
-
-def
-
-    
