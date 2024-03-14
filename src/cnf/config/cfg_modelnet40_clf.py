@@ -19,11 +19,11 @@ config = {
     "optimizer": {"name": "adam", "lr": 1e-3},
     # "scheduler": {"max_steps": 100_000, "warmup_steps": 1000, "decay_steps": 30000},
     "scheduler": None,
-    "fit": {"max_steps": 100_000, "print_interval": 1, "limit_val_batches": 1},
+    "fit": {"max_steps": 100_000, "print_interval": 32, "limit_val_batches": 1},
     "parameters": {"seed": {"values": [0]}},
     "cluster": dict(
         address="snellius",
-        directory="$HOME/rail1/src/cnf/",
+        directory="/home/druhe58/rail1/src/cnf/",
         slurm="--partition=gpu --time=120:00:00 --gpus-per-node=1",
     ),
 }
