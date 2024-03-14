@@ -11,12 +11,12 @@ fi
 
 export CUBLAS_WORKSPACE_CONFIG=:4096:8
 
-if [ "$HOSTNAME" == "c3230" ]; then
+if [[ $HOSTNAME == "c3230" ]]; then
     export DATAROOT=$HOME/datasets/
     export ENV_FILE=$ROOT/env/py310_pyg230_cu115.yaml
-elif [ "$HOSTNAME" == "gcn*" ]; then
+elif [[ $HOSTNAME == gcn* ]]; then
     export DATAROOT=$HOME/datasets/
-    export ENV_FILE=$ROOT/env/py310_pyg230_cu115.yaml
+    export ENV_FILE=$ROOT/env/py310_pyg230_cu117.yaml
 else
     echo "Unknown hostname $HOSTNAME". Exiting.
     return 1
@@ -37,7 +37,7 @@ if [ ! -d "$VENV_DIR" ]; then
     echo "Creating virtual environment $VENV_DIR"
     python3 -m venv $VENV_DIR --system-site-packages
     source $VENV_DIR/bin/activate
-    pip install -r requirements.txt
+    pip install -r env/requirements.txt
     cd $ROOT/lib/rail1/ && pip install -e . && cd -
 else
     source $VENV_DIR/bin/activate
