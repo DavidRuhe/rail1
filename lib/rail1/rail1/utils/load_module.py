@@ -5,7 +5,6 @@ import importlib.util
 
 
 def load_attribute_from_python_file(path, attribute):
-    print(path, attribute)
     spec = importlib.util.spec_from_file_location(attribute, path)
     assert spec is not None, f"Could not find {attribute} in {path}"
     module = importlib.util.module_from_spec(spec)
