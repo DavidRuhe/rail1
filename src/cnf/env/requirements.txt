@@ -4,3 +4,5 @@ notebook==6.0.0
 matplotlib==3.8.2
 trimesh==4.1.6
 h5py==3.10.0
+einops==0.7.0
+timm==0.9.16

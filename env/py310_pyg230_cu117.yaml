@@ -17,3 +17,4 @@ dependencies:
   - pip: 
     - torchvision==0.14.1 
     - torchaudio==0.13.1
+    - kaolin==0.15.0 -f https://nvidia-kaolin.s3.us-east-2.amazonaws.com/torch-1.13.1_cu117.html
