@@ -23,7 +23,7 @@ config = {
     "parameters": {"seed": {"values": [0]}},
     "cluster": dict(
         address="snellius",
-        directory="/home/druhe/rail1/src/cnf/",
+        directory="$HOME/rail1/src/cnf/",
         slurm="--partition=gpu --time=120:00:00 --gpus-per-node=1",
     ),
 }
