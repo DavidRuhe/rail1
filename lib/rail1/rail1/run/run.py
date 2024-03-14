@@ -77,8 +77,9 @@ def write_jobfile(slurm_string, n_jobs, command, directory, jobfile_path, sweep_
     sbatch_lines.append(f"#SBATCH --array=1-{n_jobs}")
     sbatch_lines.append(f"#SBATCH --output={os.path.join(directory, 'slurm-%j.out')}")
     sbatch_lines.append(f"cd {directory}")
+    sbatch_lines.append("git pull")
     sbatch_lines.append(f"git checkout {sweep_id}")
-    sbatch_lines.append("source ./activate.sh")
+    sbatch_lines.append("source env/activate.sh")
     sbatch_lines.append(str(command))
 
     sbatch_script = "\n".join(sbatch_lines)
