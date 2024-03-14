@@ -34,14 +34,13 @@ def to_device(input, device, detach=True):
         keys = range(len(input))
     elif isinstance(input, dict):
         keys = input.keys()
-    elif isinstance(input, plt.Figure):
         return input
-    elif isinstance(input, np.ndarray):
-        return input
-    else:
+    elif isinstance(input, torch.Tensor):
         input = input.to(device)
         if detach:
             input = input.detach()
+        return input
+    else:
         return input
     for k in keys:
         input[k] = to_device(input[k], device)
@@ -94,6 +93,7 @@ def test_loop(
         prefix = "test"
 
     for batch_idx in range(num_iterations):
+
         batch = test_loader[batch_idx]
         batch = to_device(batch, train_state["device"])
         _, outputs = forward_and_loss_fn(batch, model)
@@ -323,6 +323,7 @@ def fit(
                 if train_state["global_step"] == 0 and skip_initial_eval:
                     print("Skipping initial evaluation.")  # pragma: no cover
 
+
                 val_metrics = test_loop(
                     train_state,
                     model,
@@ -333,6 +334,7 @@ def fit(
                     eval_batch_fn,
                     validation=True,
                     limit_batches=limit_val_batches,
+                    print_interval=print_interval,
                 )
 
             t0 = time.time()
@@ -348,6 +350,7 @@ def fit(
                     logging_fn,
                     eval_batch_fn,
                     limit_batches=limit_val_batches,
+                    print_interval=print_interval,
                 )
 
             checkpoint.save_checkpoint(

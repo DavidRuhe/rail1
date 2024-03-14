@@ -1,0 +1,14 @@
+{
+    "version": 1,
+    "storagePolicy": "wandb-storage-policy-v1",
+    "storagePolicyConfig": {
+        "storageLayout": "V2"
+    },
+    "contents": {
+        "step=1024-epoch=0-val_loss=2.3086-val_s_it=0.0125.pt": {
+            "digest": "SfiJkysGvpD7lB+RCMQu6g==",
+            "birthArtifactID": "QXJ0aWZhY3Q6Njg1NTY5NDI2",
+            "size": 36028
+        }
+    }
+}

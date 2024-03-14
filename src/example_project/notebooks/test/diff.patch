@@ -1,0 +1,19 @@
+diff --git a/rail1/fire.py b/rail1/fire.py
+index 97f7b23..4c59f32 100644
+--- a/rail1/fire.py
++++ b/rail1/fire.py
+@@ -178,10 +178,14 @@ def fire(function):
+     wandb_cfg = None
+     if USE_WANDB:
+         name = _add_sweep_name(name)
++        assert 'project' in config
++        assert 'entity' in config
+         wandb_kwargs = dict(
+             config=config.copy(),
+             name=name,
+             dir=run_dir,
++            project=config["project"],
++            entity=config["entity"],
+         )
+         wandb_cfg = _setup_wandb(**wandb_kwargs)
+ 

@@ -7,7 +7,6 @@ wandb/
 baselines/
 *.out
 runs/
-notebooks/
 .coverage
 *.so
 *.o
