@@ -22,6 +22,8 @@ def forward_and_loss_fn(input, model):
 
     return loss.mean(0), {
         "loss": loss,
+        "logits": preds,
+        "targets": labels,
     }
 
 
@@ -91,7 +93,8 @@ def main(config):
     metric_fns = [
         functools.partial(rail1.metrics.mean_key, key="loss"),
         functools.partial(rail1.metrics.figure_key, key="points"),
-        functools.partial(rail1.metrics.figure_key, key="volume"),
+        rail1.metrics.inv_accuracy
+        # functools.partial(rail1.metrics.figure_key, key="volume"),
     ]
 
     rail1.fit(
