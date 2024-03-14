@@ -1,0 +1,28 @@
+config = {
+    "name": "random_surface_occupancy",
+    "project": "cnf",
+    "entity": "druhe",
+    "method": "grid",
+    "deterministic": True,
+    "device": "cuda",
+    "command": [
+        "python",
+        "-u",
+        "rso.py",
+        "config/config_rso.py",
+        "${args}",
+    ],
+    "seed": 0,
+    "continue": None,
+    "dataset": {
+        "name": "random_surfaces",
+        "batch_size": 1024,
+        "n_points_per_shape": 64,
+    },
+    "model": dict(name='rso_baseline'),
+    "optimizer": {"name": "adam", "lr": 1e-4},
+    # "scheduler": {"max_steps": 100_000, "warmup_steps": 1000, "decay_steps": 30000},
+    "scheduler": None,
+    "fit": {"max_steps": 100_000, "limit_val_batches": 1},
+    "parameters": {"seed": {"values": [0]}},
+}

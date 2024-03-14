@@ -5,7 +5,10 @@ from .modules.dgcnn_cls import DGCNN_cls
 from . import s2vs_ae
 from . import convdfnet
 from .points_ae import RandomPointsAE, RandomSurfacesMLP
+from .vn_dcgnn import VNDGCNN
 
+def vn_dgcnn():
+    return VNDGCNN()
 
 def mnist_autoencoder():
     return Autoencoder(784, (512, 256, 128))
