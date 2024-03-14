@@ -151,14 +151,16 @@ def process_args_and_load_config(argv, devrun=False):  # pragma: no cover
 
 
 def main():  # pragma: no cover
+
     config, name, project, entity = process_args_and_load_config(sys.argv)
     sweep_id = wandb.sweep(sweep=config, project=project, entity=entity)
     on_cluster = "cluster" in config
 
+    command = "WANDB_ENABLED=TRUE wandb agent {entity}/{project}/{sweep_id}"
+
     if on_cluster:  # pragma: no cover
-        raise NotImplementedError
         cluster_config = config["cluster"]
-        command = cluster_config["command"]
+        # command = cluster_config["command"]
         slurm_arguments = cluster_config["slurm"]
         directory = cluster_config["directory"]
         all_values = [config["parameters"][k]["values"] for k in config["parameters"]]
@@ -166,7 +168,6 @@ def main():  # pragma: no cover
         command = replace_variables(command, locals())
         write_jobfile(slurm_arguments, num_jobs, command, directory, sweep_id)
     else:
-        command = "WANDB_ENABLED=TRUE wandb agent {entity}/{project}/{sweep_id}"
         command = replace_variables(command, locals())
         cluster_config = None
         directory = None
