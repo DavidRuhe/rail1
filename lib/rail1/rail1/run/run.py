@@ -71,7 +71,7 @@ def commit_files(sweep_id):  # pragma: no cover
     # return commit_sha
 
 
-def write_jobfile(slurm_string, n_jobs, command, directory, sweep_id):
+def write_jobfile(slurm_string, n_jobs, command, directory, jobfile_path, sweep_id):
     sbatch_lines = generate_sbatch_lines(slurm_string)
 
     sbatch_lines.append(f"#SBATCH --array=1-{n_jobs}")
@@ -83,7 +83,6 @@ def write_jobfile(slurm_string, n_jobs, command, directory, sweep_id):
 
     sbatch_script = "\n".join(sbatch_lines)
 
-    jobfile_path = os.path.join(directory, "slurm_job.sh")
     with open(jobfile_path, "w") as f:
         f.write(sbatch_script)
 
@@ -166,7 +165,14 @@ def main():  # pragma: no cover
         all_values = [config["parameters"][k]["values"] for k in config["parameters"]]
         num_jobs = len(tuple(itertools.product(*all_values)))
         command = replace_variables(command, locals())
-        write_jobfile(slurm_arguments, num_jobs, command, directory, sweep_id)
+
+        rel_path = os.path.join("slurm", f"{sweep_id}.slurm")
+        os.makedirs(os.path.dirname(rel_path), exist_ok=True)
+        jobfile_path = os.path.join(directory, rel_path)
+
+        write_jobfile(
+            slurm_arguments, num_jobs, command, directory, jobfile_path, sweep_id
+        )
     else:
         command = replace_variables(command, locals())
         cluster_config = None
@@ -180,7 +186,7 @@ def main():  # pragma: no cover
         print("\nSuccessfully submitted sweep. To fire remotely, run:")
         print(f"ssh {cluster_config['address']}")
         print(
-            f"cd {directory} && git fetch && git checkout {sweep_id} && sbatch slurm_job.sh\n"
+            f"cd {directory} && git fetch && git checkout {sweep_id} && sbatch {rel_path}\n"
         )
 
     else:
