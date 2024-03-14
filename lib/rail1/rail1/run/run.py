@@ -175,7 +175,6 @@ def main():  # pragma: no cover
     commit_files(sweep_id)
 
     if on_cluster:  # pragma: no cover
-        raise NotImplementedError
         assert cluster_config is not None
         assert directory is not None
         print("\nSuccessfully submitted sweep. To fire remotely, run:")

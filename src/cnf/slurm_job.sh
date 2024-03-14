@@ -5,6 +5,6 @@
 #SBATCH --array=1-1
 #SBATCH --output=/home/druhe/rail1/src/cnf/slurm-%j.out
 cd /home/druhe/rail1/src/cnf/
-git checkout 2pvz4sov
+git checkout tr0lz3ky
 source ./activate.sh
-WANDB_ENABLED=TRUE wandb agent druhe/cnf/2pvz4sov
+WANDB_ENABLED=TRUE wandb agent druhe/cnf/tr0lz3ky
