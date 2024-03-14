@@ -168,10 +168,8 @@ def main():  # pragma: no cover
 
         rel_path = os.path.join("slurm", f"{sweep_id}.slurm")
         os.makedirs(os.path.dirname(rel_path), exist_ok=True)
-        jobfile_path = os.path.join(directory, rel_path)
-
         write_jobfile(
-            slurm_arguments, num_jobs, command, directory, jobfile_path, sweep_id
+            slurm_arguments, num_jobs, command, directory, rel_path, sweep_id
         )
     else:
         command = replace_variables(command, locals())
