@@ -8,10 +8,13 @@ from .shapenet_s2vs import ShapeNet, AxisScaling
 from .toy_points import load_random_points_dataset
 from .random_surfaces import load_random_surface_dataset
 from .modelnet40_points import load_modelnet40_points
+from .modelnet40_stf import load_modelnet40stf_points
 
 def modelnet40_points(**kwargs):
     return load_modelnet40_points(**kwargs)
 
+def modelnet40stf_points(**kwargs):
+    return load_modelnet40stf_points(**kwargs)
 
 def random_points(
     n_points=1, dim=3, batch_size=128, num_workers=0, num_prefetch=0, return_basis=False,

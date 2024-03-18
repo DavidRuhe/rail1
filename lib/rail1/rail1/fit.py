@@ -150,7 +150,7 @@ def train_step(
     model.train()
     batch = to_device(batch, train_state["device"])
 
-    loss, result = forward_and_loss_fn(batch, model=model)
+    loss, _ = forward_and_loss_fn(batch, model=model)
 
     optimizer.zero_grad(set_to_none=True)
     loss.backward()
@@ -166,6 +166,7 @@ def train_step(
     parameter_norm = compute_parameter_norm(model)
     gradient_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), float("inf"))
 
+    result = {}
     result["parameter_norm"] = parameter_norm
     result["gradient_norm"] = gradient_norm
 
@@ -319,6 +320,7 @@ def fit(
 
         if should_validate:
             val_metrics = None
+            test_metrics = None
             if datasets["val_loader"] is not None and limit_val_batches > 0:
                 if train_state["global_step"] == 0 and skip_initial_eval:
                     print("Skipping initial evaluation.")  # pragma: no cover
@@ -341,7 +343,7 @@ def fit(
             train_state["last_global_step"] = train_state["global_step"]
 
             if datasets["test_loader"] is not None and limit_val_batches > 0:
-                test_loop(
+                test_metrics = test_loop(
                     train_state,
                     model,
                     forward_and_loss_fn,
@@ -353,12 +355,18 @@ def fit(
                     print_interval=print_interval,
                 )
 
+            metrics = {}
+            if val_metrics is not None:
+                metrics.update(val_metrics)
+            if test_metrics is not None:
+                metrics.update(test_metrics)        
+
             checkpoint.save_checkpoint(
                 checkpoint_dir,
                 model,
                 train_state,
                 optimizer,
-                metrics=val_metrics,
+                metrics=metrics,
             )
 
         train_state["global_step"] += 1

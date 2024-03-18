@@ -6,6 +6,11 @@ from . import s2vs_ae
 from . import convdfnet
 from .points_ae import RandomPointsAE, RandomSurfacesMLP
 from .vn_dcgnn import VNDGCNN
+from .pointnetpp import PointNetPPClassification
+
+
+def pointnetpp():
+    return PointNetPPClassification()
 
 def vn_dgcnn():
     return VNDGCNN()

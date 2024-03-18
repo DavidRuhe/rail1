@@ -12,11 +12,11 @@ def figure_key(metric_dicts, is_training, key):
     return {key: metric_dicts.get(key, {}).pop()} if key in metric_dicts else {}
 
 
-def inv_accuracy(metric_dicts, is_training):
+def accuracy(metric_dicts, is_training):
     if not metric_dicts["logits"] and not metric_dicts["targets"]:
         return {}
     predictions = torch.cat(metric_dicts["logits"])
     targets = torch.cat(metric_dicts["targets"])
     return {
-        "inv_accuracy": 1 / (1e-9 + (predictions.argmax(dim=-1) == targets).float().mean())
+        "accuracy": (predictions.argmax(dim=-1) == targets).float().mean()
     }
