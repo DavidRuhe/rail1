@@ -203,6 +203,9 @@ def save_checkpoint(checkpoint_dir, model, train_state, optimizer, metrics=None)
         scalar_metrics = {
             k: get_scalar(v) for k, v in metrics.items() if get_scalar(v) is not None
         }
+        # Drop anything with 's_it' in it.
+        scalar_metrics = {k: v for k, v in scalar_metrics.items() if "s_it" not in k}
+
         # assert all(
         #     v >= 0 for v in scalar_metrics.values()
         # ), "Only non-negative metrics are supported."

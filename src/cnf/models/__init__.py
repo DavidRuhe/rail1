@@ -7,7 +7,10 @@ from . import convdfnet
 from .points_ae import RandomPointsAE, RandomSurfacesMLP
 from .vn_dcgnn import VNDGCNN
 from .pointnetpp import PointNetPPClassification
+from .fpsnet import FPSNet
 
+def fpsnet():
+    return FPSNet()
 
 def pointnetpp():
     return PointNetPPClassification()

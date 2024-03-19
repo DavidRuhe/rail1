@@ -2,6 +2,7 @@ import torch
 import torch.nn.functional as F
 from pointnet2_ops import pointnet2_utils
 from torch import nn
+import math
 
 
 def build_shared_mlp(mlp_spec, bn: bool = True):
@@ -17,167 +18,133 @@ def build_shared_mlp(mlp_spec, bn: bool = True):
     return nn.Sequential(*layers)
 
 
-# class PointnetSAModule(nn.Module):
-#     def __init__(self, npoint, radii, nsamples, mlps, bn=True, use_xyz=True):
-#         super(PointnetSAModule, self).__init__()
-#         self.npoint = npoint
-#         self.groupers = nn.ModuleList()
-#         self.mlps = nn.ModuleList()
+# def custom_ips(xyz, n):
 
-#         # Handle the case where the inputs are not lists (single scale)
-#         if not isinstance(radii, list):
-#             radii = [radii]
-#         if not isinstance(nsamples, list):
-#             nsamples = [nsamples]
-#         if not isinstance(mlps, list):
-#             mlps = [mlps]
+#     ix = torch.zeros((len(xyz)), dtype=torch.int64, device=xyz.device)
+#     indices = [ix]
+#     B, N = xyz.shape[:2]
+#     range_tensor = torch.arange(N, device=xyz.device).unsqueeze(0).repeat(B, 1)
+#     mask = range_tensor != ix.unsqueeze(1)
 
-#         assert len(radii) == len(nsamples) == len(mlps), "radii, nsamples, and mlps lists must be of equal length"
+#     for i in range(n - 1):
+#         points = torch.gather(xyz, 1, ix.unsqueeze(-1).unsqueeze(-1).expand(-1, -1, 3))
+#         d = torch.cdist(points, xyz).squeeze(1)
 
-#         for i in range(len(radii)):
-#             radius, nsample, mlp_spec = radii[i], nsamples[i], mlps[i]
-#             if use_xyz:
-#                 mlp_spec[0] += 3
-#             self.groupers.append(pointnet2_utils.QueryAndGroup(radius, nsample, use_xyz=use_xyz) if npoint else pointnet2_utils.GroupAll(use_xyz))
-#             self.mlps.append(build_shared_mlp(mlp_spec, bn))
+#         d *= mask
 
-#     def forward(self, xyz, features):
-#         new_features_list = []
-#         xyz_flipped = xyz.transpose(1, 2).contiguous()
-#         new_xyz = pointnet2_utils.gather_operation(xyz_flipped, pointnet2_utils.furthest_point_sample(xyz, self.npoint)).transpose(1, 2).contiguous() if self.npoint else None
+#         ix = torch.argmax(d, dim=1)
 
-#         for grouper, mlp in zip(self.groupers, self.mlps):
-#             new_features = grouper(xyz, new_xyz, features)  # (B, C, npoint, nsample)
-#             new_features = mlp(new_features)  # (B, mlp[-1], npoint, nsample)
-#             new_features = F.max_pool2d(new_features, kernel_size=[1, new_features.size(3)])  # (B, mlp[-1], npoint, 1)
-#             new_features = new_features.squeeze(-1)  # (B, mlp[-1], npoint)
-#             new_features_list.append(new_features)
+#         indices.append(ix)
+#     mask = mask & (range_tensor != ix.unsqueeze(1))
 
-#         return new_xyz, torch.cat(new_features_list, dim=1)
+#     return torch.stack(indices, dim=1).to(torch.int32)
 
-
-class _PointnetSAModuleBase(nn.Module):
-    def __init__(self):
-        super(_PointnetSAModuleBase, self).__init__()
-        self.npoint = None
-        self.groupers = None
-        self.mlps = None
-
-    def forward(self, xyz: torch.Tensor, features):
-        r"""
-        Parameters
-        ----------
-        xyz : torch.Tensor
-            (B, N, 3) tensor of the xyz coordinates of the features
-        features : torch.Tensor
-            (B, C, N) tensor of the descriptors of the the features
-
-        Returns
-        -------
-        new_xyz : torch.Tensor
-            (B, npoint, 3) tensor of the new features' xyz
-        new_features : torch.Tensor
-            (B,  \sum_k(mlps[k][-1]), npoint) tensor of the new_features descriptors
-        """
-
-        new_features_list = []
-
-        xyz_flipped = xyz.transpose(1, 2).contiguous()
-        new_xyz = (
-            pointnet2_utils.gather_operation(
-                xyz_flipped, pointnet2_utils.furthest_point_sample(xyz, self.npoint)
-            )
-            .transpose(1, 2)
-            .contiguous()
-            if self.npoint is not None
-            else None
-        )
-
-        for i in range(len(self.groupers)):
-            new_features = self.groupers[i](
-                xyz, new_xyz, features
-            )  # (B, C, npoint, nsample)
-
-            new_features = self.mlps[i](new_features)  # (B, mlp[-1], npoint, nsample)
-            new_features = F.max_pool2d(
-                new_features, kernel_size=[1, new_features.size(3)]
-            )  # (B, mlp[-1], npoint, 1)
-            new_features = new_features.squeeze(-1)  # (B, mlp[-1], npoint)
-
-            new_features_list.append(new_features)
-
-        return new_xyz, torch.cat(new_features_list, dim=1)
-
-
-class PointnetSAModuleMSG(_PointnetSAModuleBase):
-    r"""Pointnet set abstrction layer with multiscale grouping
-
-    Parameters
-    ----------
-    npoint : int
-        Number of features
-    radii : list of float32
-        list of radii to group with
-    nsamples : list of int32
-        Number of samples in each ball query
-    mlps : list of list of int32
-        Spec of the pointnet before the global max_pool for each scale
-    bn : bool
-        Use batchnorm
+def farthest_point_sample(xyz, npoint):
     """
+    Input:
+        xyz: pointcloud data, [B, N, 3]
+        npoint: number of samples
+    Return:
+        centroids: sampled pointcloud index, [B, npoint]
+    """
+    device = xyz.device
+    B, N, C = xyz.shape
+    centroids = torch.zeros(B, npoint, dtype=torch.long, device=device)
+    distance = torch.ones(B, N).to(device) * 1e10
+    batch_indices = torch.arange(B, dtype=torch.long, device=device)
 
+    farthest = torch.zeros(B, dtype=torch.long, device=device)
+
+    centroid_locs = torch.zeros(B, npoint, 3, device=device)
+
+    for i in range(npoint):
+        centroids[:, i] = farthest
+        centroid = xyz[batch_indices, farthest, :].view(B, 1, 3)
+        centroid_locs[:, i: i + 1] = centroid
+        dist = torch.sum((xyz - centroid) ** 2, -1)
+        mask = dist < distance  # Smaller such that we select a new point
+        distance[mask] = dist[mask]
+        farthest = torch.max(distance, -1)[1]
+    return centroids.to(torch.int32), centroid_locs
+
+
+class PointnetSAModule(nn.Module):
     def __init__(self, npoint, radii, nsamples, mlps, bn=True, use_xyz=True):
-        super(PointnetSAModuleMSG, self).__init__()
-
-        assert len(radii) == len(nsamples) == len(mlps)
-
+        super(PointnetSAModule, self).__init__()
         self.npoint = npoint
         self.groupers = nn.ModuleList()
         self.mlps = nn.ModuleList()
+
+        # Handle the case where the inputs are not lists (single scale)
+        if not isinstance(radii, list):
+            radii = [radii]
+        if not isinstance(nsamples, list):
+            nsamples = [nsamples]
+        if not isinstance(mlps[0], list):
+            mlps = [mlps]
+
+        assert (
+            len(radii) == len(nsamples) == len(mlps)
+        ), "radii, nsamples, and mlps lists must be of equal length"
+
         for i in range(len(radii)):
-            radius = radii[i]
-            nsample = nsamples[i]
-            self.groupers.append(
-                pointnet2_utils.QueryAndGroup(radius, nsample, use_xyz=use_xyz)
-                if npoint is not None
-                else pointnet2_utils.GroupAll(use_xyz)
-            )
-            mlp_spec = mlps[i]
+            radius, nsample, mlp_spec = radii[i], nsamples[i], mlps[i]
             if use_xyz:
                 mlp_spec[0] += 3
-
+            self.groupers.append(
+                pointnet2_utils.QueryAndGroup(radius, nsample, use_xyz=use_xyz)
+                if npoint
+                else pointnet2_utils.GroupAll(use_xyz)
+            )
             self.mlps.append(build_shared_mlp(mlp_spec, bn))
 
+    def forward(self, xyz, features):
+        new_features_list = []
+        xyz_flipped = xyz.transpose(1, 2).contiguous()
+        # new_xyz = (
+        #     pointnet2_utils.gather_operation(
+        #         xyz_flipped, pointnet2_utils.furthest_point_sample(xyz, self.npoint)
+        #     )
+        #     .transpose(1, 2)
+        #     .contiguous()
+        #     if self.npoint
+        #     else None
+        # )
+        with torch.no_grad():
+                xyz = torch.cat([torch.mean(xyz, dim=1, keepdim=True), xyz], dim=1)
+                if self.npoint is not None:
+                    centroids, centroid_locs = farthest_point_sample(xyz, self.npoint)
+                # new_xyz = (
+                #     pointnet2_utils.gather_operation(
+                #         xyz_flipped, centroids
+                #     )
+                #     .transpose(1, 2)
+                #     .contiguous()
+                #     if self.npoint
+                #     else None
+                # )
+                    new_xyz = centroid_locs
+                else:
+                    new_xyz = None
+                xyz = xyz[:, 1:].contiguous()
 
-class PointnetSAModule(PointnetSAModuleMSG):
-    r"""Pointnet set abstrction layer
 
-    Parameters
-    ----------
-    npoint : int
-        Number of features
-    radius : float
-        Radius of ball
-    nsample : int
-        Number of samples in the ball query
-    mlp : list
-        Spec of the pointnet before the global max_pool
-    bn : bool
-        Use batchnorm
-    """
+        # Idea: look which K points are closest to the new centroids.
+        # Process them, and agggregate them to the new centroids.
+        for grouper, mlp in zip(self.groupers, self.mlps):
+            new_features = grouper(xyz, new_xyz, features)  # (B, C, npoint, nsample)
+            new_features = mlp(new_features)  # (B, mlp[-1], npoint, nsample)
+            # new_features = F.(
+            #     new_features, kernel_size=[1, new_features.size(3)]
+            # )  # (B, mlp[-1], npoint, 1)
+            # new_features = 1 / math.sqrt(new_features.size(3)) * torch.sum(
+            #     new_features, dim=3, keepdim=False
+            # )  # (B, mlp[-1], npoint, 1)
+            new_features = torch.max(new_features, 3)[0]  # (B, mlp[-1], npoint, 1
+            # new_features = new_features.squeeze(-1)  # (B, mlp[-1], npoint)
+            new_features_list.append(new_features)
 
-    def __init__(
-        self, mlp, npoint=None, radius=None, nsample=None, bn=True, use_xyz=True
-    ):
-        # type: (PointnetSAModule, List[int], int, float, int, bool, bool) -> None
-        super(PointnetSAModule, self).__init__(
-            mlps=[mlp],
-            npoint=npoint,
-            radii=[radius],
-            nsamples=[nsample],
-            bn=bn,
-            use_xyz=use_xyz,
-        )
+        return new_xyz, torch.cat(new_features_list, dim=1)
 
 
 lr_clip = 1e-5
@@ -197,23 +164,29 @@ class PointNetPPClassification(nn.Module):
         self.SA_modules.append(
             PointnetSAModule(
                 npoint=512,
-                radius=0.2,
-                nsample=64,
-                mlp=[0, 64, 64, 128],
+                radii=[0.2],
+                nsamples=[64],
+                mlps=[[0, 64, 64, 128]],
                 use_xyz=self.use_xyz,
             )
         )
         self.SA_modules.append(
             PointnetSAModule(
                 npoint=128,
-                radius=0.4,
-                nsample=64,
-                mlp=[128, 128, 128, 256],
+                radii=[0.4],
+                nsamples=[64],
+                mlps=[[128, 128, 128, 256]],
                 use_xyz=self.use_xyz,
             )
         )
         self.SA_modules.append(
-            PointnetSAModule(mlp=[256, 256, 512, 1024], use_xyz=self.use_xyz)
+            PointnetSAModule(
+                mlps=[[256, 256, 512, 1024]],
+                use_xyz=self.use_xyz,
+                npoint=None,
+                radii=None,
+                nsamples=None,
+            )
         )
 
         self.fc_layer = nn.Sequential(

@@ -5,7 +5,7 @@ from rail1.data import collate
 from .embedded_mnist import load_embedded_mnist
 from .shapenet import load_shapenet
 from .shapenet_s2vs import ShapeNet, AxisScaling
-from .toy_points import load_random_points_dataset
+from .random_points import load_random_points_dataset
 from .random_surfaces import load_random_surface_dataset
 from .modelnet40_points import load_modelnet40_points
 from .modelnet40_stf import load_modelnet40stf_points
@@ -17,14 +17,14 @@ def modelnet40stf_points(**kwargs):
     return load_modelnet40stf_points(**kwargs)
 
 def random_points(
-    n_points=1, dim=3, batch_size=128, num_workers=0, num_prefetch=0, return_basis=False,
+    num_points=1, dim=3, batch_size=128, num_workers=0, n_prefetch=0, return_basis=False,
 ):
     return load_random_points_dataset(
-        n_points=n_points,
+        n_points=num_points,
         dim=dim,
         batch_size=batch_size,
         num_workers=num_workers,
-        num_prefetch=num_prefetch,
+        num_prefetch=n_prefetch,
         return_basis=return_basis,
     )
 
