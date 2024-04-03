@@ -11,42 +11,17 @@ import datasets
 import models
 
 
-def farthest_point_sample(xyz, npoint):
-    device = xyz.device
-    B, N, C = xyz.shape
-    centroids = torch.zeros(B, npoint, dtype=torch.long, device=device)
-    distance = torch.ones(B, N).to(device) * 1e10
-    batch_indices = torch.arange(B, dtype=torch.long, device=device)
+def forward_and_loss_fn(points, model, num_points=3):
 
-    farthest = torch.zeros(B, dtype=torch.long, device=device)
+    B, M, D = points.shape
+    points = points[:, :2, None]
+    targets = points.transpose(1, 2)
 
-    centroid_locs = torch.zeros(B, npoint, 3, device=device)
-
-    for i in range(npoint):
-        centroids[:, i] = farthest
-        centroid = xyz[batch_indices, farthest, :].view(B, 1, 3)
-        centroid_locs[:, i : i + 1] = centroid
-        dist = torch.sum((xyz - centroid) ** 2, -1)
-        mask = dist < distance  # Smaller such that we select a new point
-        distance[mask] = dist[mask]
-        farthest = torch.max(distance, -1)[1]
-    return centroids.to(torch.int32), centroid_locs
-
-
-def forward_and_loss_fn(points, model, num_points=16):
-
-    points = torch.cat(
-        [
-            points.mean(1, keepdim=True),
-            points,
-        ],
-        dim=1,
-    )
-
-    _, targets = farthest_point_sample(points, num_points)
     preds = model.forward(points)
 
-    loss = F.mse_loss(preds, targets, reduction="none").mean((1, 2))
+    loss = F.mse_loss(preds, targets, reduction="none")
+
+    loss = loss.mean((1, 2, 3))
 
     return loss.mean(0), {
         "loss": loss,

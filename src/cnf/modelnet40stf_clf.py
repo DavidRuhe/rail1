@@ -49,7 +49,9 @@ def eval_batch(points, batch_idx, outputs, *, model, idx_to_label, validation=Fa
     if batch_idx > 0:
         return
 
+    return 
     points, labels = points
+    points = points[0]
     outputs["points"] = points[0]
     plotly = plotly_pointcloud(points[0], idx_to_label[labels[0].cpu().item()])
 

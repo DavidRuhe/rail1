@@ -61,12 +61,15 @@ def pc_normalize(pc):
 
 
 class ModelNet40STF(data.Dataset):
-    def __init__(self, num_points, transforms=None, train=True, download=True):
+    def __init__(
+        self, num_points, deterministic=True, transforms=None, train=True, download=True
+    ):
         super().__init__()
 
         self.num_points = num_points
         self.transforms = transforms
         self.train = train
+        self.deterministic = deterministic
 
         if train:
             data_path = os.path.join(
@@ -104,7 +107,10 @@ class ModelNet40STF(data.Dataset):
         points = self.memmap_data[idx]
         label = self.memmap_labels[idx]
 
-        idx = np.random.choice(self.indices, self.num_points, replace=False)
+        if self.deterministic:
+            idx = np.arange(self.num_points)
+        else:
+            idx = np.random.choice(self.indices, self.num_points, replace=False)
         points = points[idx][:, :3]
 
         max_norm = np.max(np.linalg.norm(points, axis=1))
@@ -113,15 +119,18 @@ class ModelNet40STF(data.Dataset):
         if self.transforms is not None:
             raise NotImplementedError
         return points, label
-    
 
 
-def load_modelnet40stf_points(num_points, *, batch_size=32, num_workers=4, n_prefetch=2):
+def load_modelnet40stf_points(
+    num_points, *, batch_size=32, num_workers=4, n_prefetch=2
+):
     train = ModelNet40STF(
-        num_points=num_points, train=True,
+        num_points=num_points,
+        train=True,
     )
     test = ModelNet40STF(
-        num_points=num_points, train=False,
+        num_points=num_points,
+        train=False,
     )
 
     train_loader = batchloader.BatchLoader(
@@ -142,15 +151,12 @@ def load_modelnet40stf_points(num_points, *, batch_size=32, num_workers=4, n_pre
 
     idx_to_label = {v: k for k, v in LABEL_TO_IDX.items()}
 
-
-
     return {
         "train_loader": train_loader,
         "val_loader": None,
         "test_loader": test_loader,
         "idx_to_label": idx_to_label,
     }
-
 
 
 def preprocess_modelnet40():

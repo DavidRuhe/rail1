@@ -8,12 +8,19 @@ from .points_ae import RandomPointsAE, RandomSurfacesMLP
 from .vn_dcgnn import VNDGCNN
 from .pointnetpp import PointNetPPClassification
 from .fpsnet import FPSNet
+from .transposenet import TransposeNet
+
+def transposenet():
+    return TransposeNet()
 
 def fpsnet():
     return FPSNet()
 
 def pointnetpp():
     return PointNetPPClassification()
+
+def pointnetpp_kmeans():
+    return PointNetPPClassification(kmeans=True)
 
 def vn_dgcnn():
     return VNDGCNN()

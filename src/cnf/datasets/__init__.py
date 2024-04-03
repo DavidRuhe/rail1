@@ -9,12 +9,16 @@ from .random_points import load_random_points_dataset
 from .random_surfaces import load_random_surface_dataset
 from .modelnet40_points import load_modelnet40_points
 from .modelnet40_stf import load_modelnet40stf_points
+from .modelnet40_kmeans import load_modelnet40stf_points_kmeans
 
 def modelnet40_points(**kwargs):
     return load_modelnet40_points(**kwargs)
 
 def modelnet40stf_points(**kwargs):
     return load_modelnet40stf_points(**kwargs)
+
+def modelnet40stf_points_kmeans(**kwargs):
+    return load_modelnet40stf_points_kmeans(**kwargs)
 
 def random_points(
     num_points=1, dim=3, batch_size=128, num_workers=0, n_prefetch=0, return_basis=False,

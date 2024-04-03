@@ -5,6 +5,7 @@ from torch import nn
 import math
 
 
+
 def build_shared_mlp(mlp_spec, bn: bool = True):
     layers = []
     for i in range(1, len(mlp_spec)):
@@ -16,6 +17,53 @@ def build_shared_mlp(mlp_spec, bn: bool = True):
         layers.append(nn.ReLU(True))
 
     return nn.Sequential(*layers)
+
+
+import torch
+from pykeops.torch import LazyTensor
+import time
+from pykeops.torch.cluster import cluster_centroids
+
+def KMeans(x, c, Niter=32):
+    """Implements Lloyd's algorithm for the Euclidean metric."""
+
+    start = time.time()
+    N, D = x.shape  # Number of samples, dimension of the ambient space
+
+    c = c.clone()  # Simplistic initialization for the centroids
+
+    K = c.shape[0]
+    x_i = LazyTensor(x.view(N, 1, D))  # (N, 1, D) samples
+    c_j = LazyTensor(c.view(1, K, D))  # (1, K, D) centroids
+
+    for i in range(Niter):
+        # E step: assign points to the closest cluster -------------------------
+        D_ij = ((x_i - c_j) ** 2).sum(-1)  # (N, K) symbolic squared distances
+        cl = D_ij.argmin(dim=1).long().view(-1)  # Points -> Nearest cluster
+
+        # M step: update the centroids to the normalized cluster average: ------
+        # Compute the sum of points per cluster:
+        c_old = c.clone()
+        c.zero_()
+        c.scatter_add_(0, cl[:, None].repeat(1, D), x)
+
+        # Divide by the number of points per cluster:
+        Ncl = torch.bincount(cl, minlength=K).type_as(c).view(K, 1)
+        Ncl = torch.max(Ncl, torch.ones_like(Ncl))
+        c /= Ncl  # in-place division to compute the average
+
+        diff = (c - c_old).abs().max()
+
+        if not torch.isfinite(diff):
+            print("Numerical errors at iteration", i)
+            break
+
+        if diff < 1e-5:
+            # print("Convergence reached in", i, "iterations, within", time.time() - start, "seconds")
+            break
+
+    return cl, c
+
 
 
 # def custom_ips(xyz, n):
@@ -69,11 +117,12 @@ def farthest_point_sample(xyz, npoint):
 
 
 class PointnetSAModule(nn.Module):
-    def __init__(self, npoint, radii, nsamples, mlps, bn=True, use_xyz=True):
+    def __init__(self, npoint, radii, nsamples, mlps, bn=True, use_xyz=True, kmeans=False):
         super(PointnetSAModule, self).__init__()
         self.npoint = npoint
         self.groupers = nn.ModuleList()
         self.mlps = nn.ModuleList()
+        self.kmeans = kmeans
 
         # Handle the case where the inputs are not lists (single scale)
         if not isinstance(radii, list):
@@ -99,6 +148,13 @@ class PointnetSAModule(nn.Module):
             self.mlps.append(build_shared_mlp(mlp_spec, bn))
 
     def forward(self, xyz, features):
+
+        if isinstance(xyz, list):
+            xyz, new_xyz = xyz
+        else:
+            new_xyz = None
+
+
         new_features_list = []
         xyz_flipped = xyz.transpose(1, 2).contiguous()
         # new_xyz = (
@@ -110,23 +166,29 @@ class PointnetSAModule(nn.Module):
         #     if self.npoint
         #     else None
         # )
-        with torch.no_grad():
-                xyz = torch.cat([torch.mean(xyz, dim=1, keepdim=True), xyz], dim=1)
-                if self.npoint is not None:
-                    centroids, centroid_locs = farthest_point_sample(xyz, self.npoint)
-                # new_xyz = (
-                #     pointnet2_utils.gather_operation(
-                #         xyz_flipped, centroids
-                #     )
-                #     .transpose(1, 2)
-                #     .contiguous()
-                #     if self.npoint
-                #     else None
-                # )
-                    new_xyz = centroid_locs
-                else:
-                    new_xyz = None
-                xyz = xyz[:, 1:].contiguous()
+        if new_xyz is None:
+            with torch.no_grad():
+                    xyz = torch.cat([torch.mean(xyz, dim=1, keepdim=True), xyz], dim=1)
+                    if self.npoint is not None:
+                        centroids, centroid_locs = farthest_point_sample(xyz, self.npoint)
+                        results = []
+                        for b in range(len(xyz)):
+                            results.append(KMeans(xyz[b], xyz[b, :self.npoint], Niter=32)[1])
+                        centroid_locs = torch.stack(results)
+
+                    # new_xyz = (
+                    #     pointnet2_utils.gather_operation(
+                    #         xyz_flipped, centroids
+                    #     )
+                    #     .transpose(1, 2)
+                    #     .contiguous()
+                    #     if self.npoint
+                    #     else None
+                    # )
+                        new_xyz = centroid_locs
+                    else:
+                        new_xyz = None
+                    xyz = xyz[:, 1:].contiguous()
 
 
         # Idea: look which K points are closest to the new centroids.
@@ -152,10 +214,11 @@ bnm_clip = 1e-2
 
 
 class PointNetPPClassification(nn.Module):
-    def __init__(self, use_xyz=True):
+    def __init__(self, use_xyz=True, kmeans=False):
         super().__init__()
 
         self.use_xyz = use_xyz
+        self.kmeans = kmeans
 
         self._build_model()
 
@@ -168,6 +231,7 @@ class PointNetPPClassification(nn.Module):
                 nsamples=[64],
                 mlps=[[0, 64, 64, 128]],
                 use_xyz=self.use_xyz,
+                kmeans=self.kmeans,
             )
         )
         self.SA_modules.append(
@@ -177,6 +241,7 @@ class PointNetPPClassification(nn.Module):
                 nsamples=[64],
                 mlps=[[128, 128, 128, 256]],
                 use_xyz=self.use_xyz,
+                kmeans=self.kmeans,
             )
         )
         self.SA_modules.append(
@@ -186,6 +251,7 @@ class PointNetPPClassification(nn.Module):
                 npoint=None,
                 radii=None,
                 nsamples=None,
+                kmeans=self.kmeans,
             )
         )
 
@@ -207,35 +273,35 @@ class PointNetPPClassification(nn.Module):
         return xyz, features
 
     def forward(self, pointcloud):
-        r"""
-        Forward pass of the network
+        if self.kmeans:
+            xyz, features = zip(*[self._break_up_pc(pc) for pc in pointcloud])
+            all_xyz = xyz
+            features = features[0]
+            xyz = xyz[0]
+        else:
+            xyz, features = self._break_up_pc(pointcloud)
 
-        Parameters
-        ----------
-        pointcloud: Variable(torch.cuda.FloatTensor)
-            (B, N, 3 + input_channels) tensor
-            Point cloud to run predicts on
-            Each point in the point-cloud MUST
-            be formated as (x, y, z, features...)
-        """
-        xyz, features = self._break_up_pc(pointcloud)
 
-        for module in self.SA_modules:
-            xyz, features = module(xyz, features)
+        for i, module in enumerate(self.SA_modules):
 
+            if self.kmeans:
+                xyz, features = module([xyz, all_xyz[i + 1]], features)
+            else:
+                xyz, features = module(xyz, features)
+        
         return self.fc_layer(features.squeeze(-1))
 
-    def training_step(self, batch, batch_idx):
-        pc, labels = batch
+    # def training_step(self, batch, batch_idx):
+    #     pc, labels = batch
 
-        logits = self.forward(pc)
-        loss = F.cross_entropy(logits, labels)
-        with torch.no_grad():
-            acc = (torch.argmax(logits, dim=1) == labels).float().mean()
+    #     logits = self.forward(pc)
+    #     loss = F.cross_entropy(logits, labels)
+    #     with torch.no_grad():
+    #         acc = (torch.argmax(logits, dim=1) == labels).float().mean()
 
-        log = dict(train_loss=loss, train_acc=acc)
+    #     log = dict(train_loss=loss, train_acc=acc)
 
-        return dict(loss=loss, log=log, progress_bar=dict(train_acc=acc))
+    #     return dict(loss=loss, log=log, progress_bar=dict(train_acc=acc))
 
     def validation_step(self, batch, batch_idx):
         pc, labels = batch

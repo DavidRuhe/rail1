@@ -14,7 +14,7 @@ class BatchLoader:
         base_seed=0,
         num_workers=0,
         n_prefetch=0,
-        timeout=8,
+        timeout=128,
     ):
         self.base_seed = base_seed
         self.dataset = dataset

@@ -16,7 +16,7 @@ config = {
     "continue": None,
     "dataset": dict(
         name="random_points",
-        num_points=3,
+        num_points=5,
         return_basis=False,
         batch_size=128,
         num_workers=4,

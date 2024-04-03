@@ -75,7 +75,8 @@ class ModelNet40:
         points = self.memmap_points[idx]
 
         if self.num_points is not None:
-            idxs = np.random.choice(points.shape[0], self.num_points, replace=False)
+            # idxs = np.random.choice(points.shape[0], self.num_points, replace=False)
+            idxs = np.arange(self.num_points)
             points = points[idxs]
 
         label = self.memmap_labels[idx]
