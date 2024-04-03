@@ -123,6 +123,7 @@ class PointnetSAModule(nn.Module):
         self.groupers = nn.ModuleList()
         self.mlps = nn.ModuleList()
         self.kmeans = kmeans
+        self.use_xyz = use_xyz
 
         # Handle the case where the inputs are not lists (single scale)
         if not isinstance(radii, list):
@@ -131,6 +132,8 @@ class PointnetSAModule(nn.Module):
             nsamples = [nsamples]
         if not isinstance(mlps[0], list):
             mlps = [mlps]
+
+        self.nsamples = nsamples
 
         assert (
             len(radii) == len(nsamples) == len(mlps)
@@ -194,7 +197,33 @@ class PointnetSAModule(nn.Module):
         # Idea: look which K points are closest to the new centroids.
         # Process them, and agggregate them to the new centroids.
         for grouper, mlp in zip(self.groupers, self.mlps):
+            # new_features_ = grouper(xyz, new_xyz, features)  # (B, C, npoint, nsample)
+            # if self.npoint:
+            #     cdist = torch.cdist(new_xyz, xyz)
+            #     _, indices = torch.topk(cdist, self.nsamples[0], dim=2, largest=False)
+            #     new_features = torch.gather(xyz.unsqueeze(1).expand(-1, indices.shape[1], -1, -1), 2, indices.unsqueeze(-1).expand(-1, -1, -1, 3))
+
+            #     if features is not None:
+            #         features_indexed = features.transpose(1, 2)
+            #         features_indexed = torch.gather(features_indexed.unsqueeze(1).expand(-1, indices.shape[1], -1, -1), 2, indices.unsqueeze(-1).expand(-1, -1, -1, features_indexed.shape[-1]))
+            #         new_features = torch.cat([new_features, features_indexed], dim=-1)
+
+            #     new_features = new_features.permute(0, 3, 1, 2)
+            # else:
+            #     grouped_xyz = xyz.transpose(1, 2).unsqueeze(2)
+            #     if features is not None:
+            #         grouped_features = features.unsqueeze(2)
+            #         if self.use_xyz:
+            #             new_features = torch.cat(
+            #                 [grouped_xyz, grouped_features], dim=1
+            #             )  # (B, 3 + C, 1, N)
+            #         else:
+            #             new_features = grouped_features
+            #     else:
+            #         new_features = grouped_xyz
             new_features = grouper(xyz, new_xyz, features)  # (B, C, npoint, nsample)
+            
+            # breakpoint()
             new_features = mlp(new_features)  # (B, mlp[-1], npoint, nsample)
             # new_features = F.(
             #     new_features, kernel_size=[1, new_features.size(3)]
