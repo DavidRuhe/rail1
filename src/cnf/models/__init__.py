@@ -9,6 +9,7 @@ from .vn_dcgnn import VNDGCNN
 from .pointnetpp import PointNetPPClassification
 from .fpsnet import FPSNet
 from .transposenet import TransposeNet
+from .pointnet_clean import PointNetPPClassification as PPClean
 
 def transposenet():
     return TransposeNet()
@@ -21,6 +22,9 @@ def pointnetpp():
 
 def pointnetpp_kmeans():
     return PointNetPPClassification(kmeans=True)
+
+def pointnetpp_clean():
+    return PPClean()
 
 def vn_dgcnn():
     return VNDGCNN()

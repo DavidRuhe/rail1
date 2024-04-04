@@ -139,6 +139,7 @@ class PointnetSAModule(nn.Module):
             len(radii) == len(nsamples) == len(mlps)
         ), "radii, nsamples, and mlps lists must be of equal length"
 
+        print(len(radii))
         for i in range(len(radii)):
             radius, nsample, mlp_spec = radii[i], nsamples[i], mlps[i]
             if use_xyz:
