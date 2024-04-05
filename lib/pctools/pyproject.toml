@@ -1,0 +1,26 @@
+[build-system]
+requires = ["maturin>=1.2,<2.0", "patchelf>=0.17"]
+build-backend = "maturin"
+
+[project]
+name = "pctools"
+version = "0.3.1"
+keyword = [
+    "sampling",
+    "farthest point sampling",
+    "furthest point sampling",
+    "point cloud",
+]
+description = "An efficient CPU implementation of farthest point sampling (FPS) for point clouds."
+license = { file = "LICENSE" }
+requires-python = ">=3.7"
+classifiers = [
+    "Programming Language :: Rust",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: Implementation :: PyPy",
+]
+dependencies = ["numpy>=1.16.0"]
+
+[tool.maturin]
+python-source = "python"
+features = ["pyo3/extension-module"]

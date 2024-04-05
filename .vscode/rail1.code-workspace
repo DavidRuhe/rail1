@@ -13,7 +13,7 @@
 			"path": "../src/rail1/",
 		},
 		{
-			"path": "../lib/fpsample/",
+			"path": "../lib/pctools/",
 		},
 		// {
 		// "path": "../src/cuda/"
