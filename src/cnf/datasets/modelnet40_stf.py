@@ -5,7 +5,12 @@ import os
 import numpy as np
 import torch.utils.data as data
 import tqdm
+import faiss
+from torch_geometric.nn import fps
 from rail1.data import batchloader
+import functools
+import torch
+
 
 LABEL_TO_IDX = {
     "airplane": 0,
@@ -51,25 +56,52 @@ LABEL_TO_IDX = {
 }
 
 
-def pc_normalize(pc):
-    l = pc.shape[0]
-    centroid = np.mean(pc, axis=0)
-    pc = pc - centroid
-    m = np.max(np.sqrt(np.sum(pc**2, axis=1)))
-    pc = pc / m
-    return pc
+def pc_normalize(points):
+    max_norm = points.norm(dim=-1).max()
+    points = (points - points.mean(dim=0)) / max_norm
+    return points
+
+
+def random_subset(points, n):
+    assert n <= len(points)
+    idx = torch.randperm(len(points))[:n]
+    return points[idx]
+
+
+def coarse_grain(points, resolutions, deterministic=False):
+    if deterministic:
+        p = torch.cat([points.mean(0, keepdim=True), points])
+        c = fps(p, ratio=0.5, random_start=False)
+        c = p[c[1:]]
+    else:
+        c = "random"
+
+    kmeans = KMeans(
+        n_clusters=len(points) // 2,
+        max_iter=32,
+        tol=1e-4,
+        init=c,
+        n_init=1,
+    )
+
+
+def coarse_grain(points, resolutions, deterministic=False):
+    result = []
+    for n in resolutions:
+        if deterministic:
+            pass
+        else:
+            points = random_subset(points, n)
+
+        result.append(points)
+    return result
 
 
 class ModelNet40STF(data.Dataset):
-    def __init__(
-        self, num_points, deterministic=True, transforms=None, train=True, download=True
-    ):
+    def __init__(self, transforms=None, train=True):
         super().__init__()
-
-        self.num_points = num_points
         self.transforms = transforms
         self.train = train
-        self.deterministic = deterministic
 
         if train:
             data_path = os.path.join(
@@ -98,7 +130,6 @@ class ModelNet40STF(data.Dataset):
         )
 
         self.length = len(self.memmap_labels)
-        self.indices = np.arange(10_000)
 
     def __len__(self):
         return self.length
@@ -107,17 +138,10 @@ class ModelNet40STF(data.Dataset):
         points = self.memmap_data[idx]
         label = self.memmap_labels[idx]
 
-        if self.deterministic:
-            idx = np.arange(self.num_points)
-        else:
-            idx = np.random.choice(self.indices, self.num_points, replace=False)
-        points = points[idx][:, :3]
-
-        max_norm = np.max(np.linalg.norm(points, axis=1))
-        points = (points - np.mean(points, axis=0)) / max_norm
-
         if self.transforms is not None:
-            raise NotImplementedError
+            for transform in self.transforms:
+                points = transform(points)
+
         return points, label
 
 
@@ -225,4 +249,14 @@ def preprocess_modelnet40():
 
 
 if __name__ == "__main__":
-    preprocess_modelnet40()
+    # preprocess_modelnet40()
+    coarse_grain = functools.partial(coarse_grain, resolutions=[1024, 512, 256])
+    modelnet40 = ModelNet40STF(
+        train=True, transforms=[torch.from_numpy, pc_normalize, coarse_grain]
+    )
+    modelnet40[0]
+
+    modelnet40 = ModelNet40STF(
+        train=False, transforms=[torch.from_numpy, pc_normalize, coarse_grain]
+    )
+    modelnet40[0]

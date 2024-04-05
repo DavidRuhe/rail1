@@ -4,6 +4,7 @@ from datasets.modelnet40_stf import ModelNet40STF, LABEL_TO_IDX
 from sklearn.cluster import KMeans
 import torch
 from threadpoolctl import threadpool_limits
+import fpsample
 from torch_geometric.nn import fps
 from rail1.data import batchloader
 import numpy as np
@@ -11,11 +12,10 @@ import numpy as np
 
 class Modelnet40KMeans(ModelNet40STF):
 
-    def __init__(self, n_down=3, *args, **kwargs):
+    def __init__(self, resolutions=[1024, 512, 256], *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.n_down = n_down
-
+        self.resolutions = resolutions
     def __getitem__(self, index):
         points, label = super().__getitem__(index)
 
@@ -46,15 +46,17 @@ class Modelnet40KMeans(ModelNet40STF):
 
 
 def load_modelnet40stf_points_kmeans(
-    num_points, *, batch_size=32, num_workers=4, n_prefetch=2
+    num_points, *, batch_size=32, num_workers=4, n_prefetch=2, deterministic=True
 ):
     train = Modelnet40KMeans(
         num_points=num_points,
         train=True,
+        deterministic=deterministic,
     )
     test = Modelnet40KMeans(
         num_points=num_points,
         train=False,
+        deterministic=deterministic,
     )
 
     train_loader = batchloader.BatchLoader(

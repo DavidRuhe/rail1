@@ -5,9 +5,11 @@ from collections import defaultdict
 
 import matplotlib.pyplot as plt
 import numpy as np
+import rail1.data
 import torch
 from torch import nn
 
+import rail1
 from rail1 import checkpoint
 from rail1.utils import math as math_utils
 from rail1.utils import printing
@@ -325,7 +327,6 @@ def fit(
                 if train_state["global_step"] == 0 and skip_initial_eval:
                     print("Skipping initial evaluation.")  # pragma: no cover
 
-
                 val_metrics = test_loop(
                     train_state,
                     model,
@@ -359,7 +360,7 @@ def fit(
             if val_metrics is not None:
                 metrics.update(val_metrics)
             if test_metrics is not None:
-                metrics.update(test_metrics)        
+                metrics.update(test_metrics)
 
             checkpoint.save_checkpoint(
                 checkpoint_dir,
@@ -404,7 +405,7 @@ def fit(
             break
 
     for k, v in datasets.items():
-        if v is not None:
+        if isinstance(v, rail1.data.BatchLoader):
             v.close()
 
     return True
