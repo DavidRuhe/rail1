@@ -1,6 +1,6 @@
 """The resampled Modelnet40 dataset by Stanford researchers."""
 
-from datasets.modelnet40_stf import ModelNet40STF, LABEL_TO_IDX
+from datasets.modelnet40_stf import ModelNet40STF, LABEL_TO_IDX, pc_normalize
 from sklearn.cluster import KMeans
 import torch
 from threadpoolctl import threadpool_limits
@@ -12,35 +12,52 @@ import numpy as np
 
 class Modelnet40KMeans(ModelNet40STF):
 
-    def __init__(self, resolutions=[1024, 512, 256], *args, **kwargs):
+    def __init__(self, num_points, deterministic, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.num_points = num_points
+        self.n_down = 3
+        self.deterministic= deterministic
 
-        self.resolutions = resolutions
+
     def __getitem__(self, index):
         points, label = super().__getitem__(index)
+        points = points[:, :3]
 
-        all_points = [points]
-        with threadpool_limits(limits=1, user_api="openmp"):
-            for i in range(self.n_down):
-                points = torch.from_numpy(points)
+        if self.transforms is not None:
+            for t in self.transforms:
+                points = t(points)
 
-                if self.deterministic:
-                    p = torch.cat([points.mean(0, keepdim=True), points])
-                    c = fps(p, ratio=0.5, random_start=False).numpy()
-                    c = p[c[1:]]
-                else:
-                    c = "random"
+        return points, label
 
-                kmeans = KMeans(
-                    n_clusters=len(points) // 2,
-                    max_iter=32,
-                    tol=1e-4,
-                    init=c,
-                    n_init=1,
-                )
-                result = kmeans.fit(points.numpy())
-                points = result.cluster_centers_
-                all_points.append(points)
+        # points = pc_normalize(points)
+
+        # # Select num_points randomly
+        # idx = np.random.choice(len(points), self.num_points, replace=False)
+        # points = points[idx]
+
+
+        # all_points = [points]
+        # with threadpool_limits(limits=1, user_api="openmp"):
+        #     for i in range(self.n_down):
+        #         points = torch.from_numpy(points)
+
+        #         if self.deterministic:
+        #             p = torch.cat([points.mean(0, keepdim=True), points])
+        #             c = fps(p, ratio=0.5, random_start=False).numpy()
+        #             c = p[c[1:]]
+        #         else:
+        #             c = "random"
+
+        #         kmeans = KMeans(
+        #             n_clusters=len(points) // 2,
+        #             max_iter=32,
+        #             tol=1e-4,
+        #             init=c,
+        #             n_init=1,
+        #         )
+        #         result = kmeans.fit(points.numpy())
+        #         points = result.cluster_centers_
+        #         all_points.append(points)
 
         return all_points, label
 

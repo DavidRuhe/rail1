@@ -4,13 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "pctools"
-version = "0.3.1"
-keyword = [
-    "sampling",
-    "farthest point sampling",
-    "furthest point sampling",
-    "point cloud",
-]
+version = "1.0.0"
 description = "An efficient CPU implementation of farthest point sampling (FPS) for point clouds."
 license = { file = "LICENSE" }
 requires-python = ">=3.7"

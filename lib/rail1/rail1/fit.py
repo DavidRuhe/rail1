@@ -94,6 +94,7 @@ def test_loop(
         print_str = "Testing"
         prefix = "test"
 
+    t0 = time.time()
     for batch_idx in range(num_iterations):
 
         batch = test_loader[batch_idx]
@@ -110,11 +111,12 @@ def test_loop(
             eval_batch_fn(batch, batch_idx, outputs, validation=validation)
 
         append_to_metrics_(outputs, metrics)
-
+        t1 = time.time()
         if batch_idx % print_interval == 0:
             print(
-                f"Step: {train_state['global_step']} ({print_str}) Batch: {batch_idx} / {num_iterations}"
+                f"Step: {train_state['global_step']} [{1/(t1 - t0):.2f} it/s] ({print_str}) Batch: {batch_idx} / {num_iterations}"
             )
+        t0 = t1
 
     t1 = time.time()
     s_it = (t1 - t0) / num_iterations

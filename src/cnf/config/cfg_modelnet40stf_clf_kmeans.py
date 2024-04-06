@@ -21,7 +21,7 @@ config = {
         num_workers=4,
         n_prefetch=2,
     ),
-    "model": dict(name="pointnetpp_kmeans"),
+    "model": dict(name="pointnetpp_clean"),
     "optimizer": {"name": "adam", "lr": 1e-3},
     # "scheduler": {"max_steps": 100_000, "warmup_steps": 1000, "decay_steps": 30000},
     "scheduler": None,

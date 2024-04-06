@@ -5,11 +5,15 @@ import os
 import numpy as np
 import torch.utils.data as data
 import tqdm
-import faiss
-from torch_geometric.nn import fps
 from rail1.data import batchloader
 import functools
+from sklearn import cluster
+import fpsample
+import time
+from threadpoolctl import threadpool_limits
 import torch
+from torch_geometric.nn import fps
+import pctools
 
 
 LABEL_TO_IDX = {
@@ -57,43 +61,46 @@ LABEL_TO_IDX = {
 
 
 def pc_normalize(points):
-    max_norm = points.norm(dim=-1).max()
-    points = (points - points.mean(dim=0)) / max_norm
+    max_norm = np.linalg.norm(points, axis=1).max()
+    points = (points - points.mean(axis=0)) / max_norm
     return points
 
 
 def random_subset(points, n):
     assert n <= len(points)
-    idx = torch.randperm(len(points))[:n]
+    idx = np.random.choice(len(points), n, replace=False)
     return points[idx]
 
 
 def coarse_grain(points, resolutions, deterministic=False):
-    if deterministic:
-        p = torch.cat([points.mean(0, keepdim=True), points])
-        c = fps(p, ratio=0.5, random_start=False)
-        c = p[c[1:]]
-    else:
-        c = "random"
-
-    kmeans = KMeans(
-        n_clusters=len(points) // 2,
-        max_iter=32,
-        tol=1e-4,
-        init=c,
-        n_init=1,
-    )
-
-
-def coarse_grain(points, resolutions, deterministic=False):
     result = []
+
     for n in resolutions:
         if deterministic:
-            pass
+            p = np.concatenate([points.mean(0, keepdims=True), points], axis=0)
+            c = fpsample.fps_sampling(p, n + 1, start_idx=0)
+            c = p[c[1:]]
+            points = c
         else:
             points = random_subset(points, n)
 
         result.append(points)
+
+    # with threadpool_limits(limits=1, user_api="openmp"):
+    #     for n in resolutions:
+    #         if deterministic:
+    #             p = np.concatenate([points.mean(0, keepdims=True), points], axis=0)
+    #             c = fpsample.fps_sampling(p, n + 1, start_idx=0)
+    #             c = p[c[1:]]
+    #             kmeans = cluster.KMeans(
+    #                 n_clusters=n,
+    #                 init=c,
+    #                 tol=1e-4,
+    #                 max_iter=32,
+    #             )
+    #             points = kmeans.fit(points).cluster_centers_
+
+    #         result.append(points)
     return result
 
 
@@ -135,26 +142,63 @@ class ModelNet40STF(data.Dataset):
         return self.length
 
     def __getitem__(self, idx):
-        points = self.memmap_data[idx]
+        points_normals = self.memmap_data[idx]
         label = self.memmap_labels[idx]
+        points = points_normals[:, :3]
 
         if self.transforms is not None:
-            for transform in self.transforms:
-                points = transform(points)
-
+            for t in self.transforms:
+                points = t(points)
         return points, label
+
+        # idx = np.random.choice(len(points), 1024, replace=False)
+        # points = points[idx]
+
+        # all_points = [points]
+        # with threadpool_limits(limits=1, user_api="openmp"):
+        #     for i in range(3):
+        #         points = torch.from_numpy(points)
+
+        #         c = 'random'
+        #         # if self.deterministic:
+        #         #     p = torch.cat([points.mean(0, keepdim=True), points])
+        #         #     c = fps(p, ratio=0.5, random_start=False).numpy()
+        #         #     c = p[c[1:]]
+
+        #         kmeans = cluster.KMeans(
+        #             n_clusters=len(points) // 2,
+        #             max_iter=32,
+        #             tol=1e-4,
+        #             init=c,
+        #             n_init=1,
+        #         )
+        #         result = kmeans.fit(points.numpy())
+        #         points = result.cluster_centers_
+        #         all_points.append(points)
+
+        # return all_points, label
+
+
 
 
 def load_modelnet40stf_points(
-    num_points, *, batch_size=32, num_workers=4, n_prefetch=2
+    *, batch_size=32, resolutions=[1024, 512, 256], num_workers=4, n_prefetch=2
 ):
+
+    cg = functools.partial(coarse_grain, resolutions=resolutions, deterministic=False)
+    train_transforms = [pc_normalize, cg]
+
     train = ModelNet40STF(
-        num_points=num_points,
         train=True,
+        transforms=train_transforms,
     )
+
+    cg = functools.partial(coarse_grain, resolutions=resolutions, deterministic=True)
+    test_transforms = [pc_normalize, cg]
+
     test = ModelNet40STF(
-        num_points=num_points,
         train=False,
+        transforms=test_transforms,
     )
 
     train_loader = batchloader.BatchLoader(
@@ -250,13 +294,19 @@ def preprocess_modelnet40():
 
 if __name__ == "__main__":
     # preprocess_modelnet40()
-    coarse_grain = functools.partial(coarse_grain, resolutions=[1024, 512, 256])
-    modelnet40 = ModelNet40STF(
-        train=True, transforms=[torch.from_numpy, pc_normalize, coarse_grain]
+    coarse_grain = functools.partial(
+        coarse_grain, resolutions=[1024, 512, 256], deterministic=False
     )
-    modelnet40[0]
+    modelnet40 = ModelNet40STF(train=True, transforms=[pc_normalize, coarse_grain])
+    ex = modelnet40[0][0]
 
-    modelnet40 = ModelNet40STF(
-        train=False, transforms=[torch.from_numpy, pc_normalize, coarse_grain]
+    for p in ex:
+        print(p.shape)
+
+    coarse_grain = functools.partial(
+        coarse_grain, resolutions=[1024, 512, 256], deterministic=True
     )
-    modelnet40[0]
+    modelnet40 = ModelNet40STF(train=False, transforms=[pc_normalize, coarse_grain])
+    ex = modelnet40[0][0]
+    for p in ex:
+        print(p.shape)
