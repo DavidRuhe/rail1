@@ -9,7 +9,7 @@ config = {
         "python",
         "-u",
         "modelnet40stf_clf.py",
-        __file__,
+        '/'.join(__file__.split('/')[-2:]),
         "${args}",
     ],
     "seed": 0,
