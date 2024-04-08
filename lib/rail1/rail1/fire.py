@@ -126,7 +126,6 @@ def _setup_wandb(*args, **kwargs):
         # Get the tag associated with that commit, if it exists
         tag = subprocess.getoutput(f"git tag --contains {commit_hash}")
 
-        print(f"Commit hash: {commit_hash}. Tag: {tag}. Sweep id: {sweep_id}.")
         if tag != sweep_id:
             raise RuntimeError(
                 f"Tag {tag} does not match sweep id {sweep_id}. Commit hash: {commit_hash}."

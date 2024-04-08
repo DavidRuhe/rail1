@@ -19,10 +19,10 @@ def build_shared_mlp(mlp_spec, bn: bool = True):
     return nn.Sequential(*layers)
 
 
-import torch
-from pykeops.torch import LazyTensor
-import time
-from pykeops.torch.cluster import cluster_centroids
+# import torch
+# from pykeops.torch import LazyTensor
+# import time
+# from pykeops.torch.cluster import cluster_centroids
 
 def KMeans(x, c, Niter=32):
     """Implements Lloyd's algorithm for the Euclidean metric."""
