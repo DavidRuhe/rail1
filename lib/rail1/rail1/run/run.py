@@ -196,8 +196,6 @@ def main():  # pragma: no cover
         num_jobs = len(tuple(itertools.product(*all_values)))
         command = replace_variables(command, locals())
 
-        breakpoint()
-
         rel_path = os.path.join("slurm", f"{sweep_id}.slurm")
         os.makedirs(os.path.dirname(rel_path), exist_ok=True)
         write_jobfile(slurm_arguments, num_jobs, command, directory, rel_path, sweep_id)
