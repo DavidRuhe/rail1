@@ -137,12 +137,13 @@ def process_args_and_load_config(argv, devrun=False):  # pragma: no cover
             if cont.lower() != "y":
                 raise RuntimeError("Aborting.")
 
-    if not devrun and len(argv) != 2 and "-h" not in argv:
-        raise ValueError(
-            f"Usage: sweep <config.yaml>. Please don't provide any other arguments."
-        )
+
     config_path = argv[1]
     config = load_module.load_attribute_from_python_file(config_path, "config")
+
+    if not devrun:
+        for kwarg in argv[2:]:
+            config['command'].append(kwarg)
 
     name = config["name"]
     project = config["project"]
@@ -179,6 +180,8 @@ def adjust_config_for_wandb(config):
 def main():  # pragma: no cover
     config, name, project, entity = process_args_and_load_config(sys.argv)
     # check_config(config)
+
+    breakpoint()
 
     sweep_id = wandb.sweep(
         sweep=adjust_config_for_wandb(config), project=project, entity=entity
