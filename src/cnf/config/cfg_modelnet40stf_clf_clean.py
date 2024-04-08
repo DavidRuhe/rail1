@@ -31,6 +31,6 @@ config = {
     "cluster": dict(
         address="snellius",
         directory="/home/druhe58/rail1/src/cnf/",
-        slurm="--partition=gpu --time=00:50:00 --gpus-per-node=1",
+        slurm="--partition=gpu --time=24:00:00 --gpus-per-node=1",
     ),
 }
