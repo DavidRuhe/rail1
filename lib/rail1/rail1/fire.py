@@ -136,6 +136,7 @@ def _setup_wandb(*args, **kwargs):
     else:
         should_initialize = True  # pragma: no cover
 
+    breakpoint()
     if should_initialize:
         return wandb.init(*args, **kwargs)
 
