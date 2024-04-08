@@ -13,7 +13,7 @@ import time
 from threadpoolctl import threadpool_limits
 import torch
 from torch_geometric.nn import fps
-import pctools
+# import pctools
 
 
 LABEL_TO_IDX = {
