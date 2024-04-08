@@ -41,10 +41,6 @@ def main():  # pragma: no cover
 
             if result != 0:
                 break
-    else:
-        raise NotImplementedError
-        command = " ".join([base_command, config_path] + args)
-        subprocess.call(command, shell=True)
 
 
 if __name__ == "__main__":  # pragma: no cover
