@@ -181,8 +181,6 @@ def main():  # pragma: no cover
     config, name, project, entity = process_args_and_load_config(sys.argv)
     # check_config(config)
 
-    breakpoint()
-
     sweep_id = wandb.sweep(
         sweep=adjust_config_for_wandb(config), project=project, entity=entity
     )
