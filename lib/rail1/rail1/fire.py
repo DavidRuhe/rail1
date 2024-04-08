@@ -131,12 +131,16 @@ def _setup_wandb(*args, **kwargs):
                 f"Tag {tag} does not match sweep id {sweep_id}. Commit hash: {commit_hash}."
             )
 
+        if 'project' in kwargs:
+            del kwargs['project']
+        if 'entity' in kwargs:
+            del kwargs['entity']
+
     if dist.is_initialized():
         should_initialize = dist.get_rank() == 0
     else:
         should_initialize = True  # pragma: no cover
 
-    breakpoint()
     if should_initialize:
         return wandb.init(*args, **kwargs)
 
