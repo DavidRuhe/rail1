@@ -150,10 +150,39 @@ def process_args_and_load_config(argv, devrun=False):  # pragma: no cover
     return config, name, project, entity
 
 
-def main():  # pragma: no cover
+# def check_config(d):
+#     not_allowed = float('inf'), float('-inf'), float('nan')
+#     for key, value in d.items():
+#         if isinstance(value, dict):
+#             check_config(value)
+#         else:
+#             assert value not in not_allowed, f"Value {value} is not allowed in config."
+def adjust_config_for_wandb(config):
+    """See https://docs.wandb.ai/guides/sweeps/sweep-config-keys"""
+    allowed = {
+        "name",
+        "project",
+        "entity",
+        "method",
+        "metric",
+        "parameters",
+        "early_terminate",
+        "command",
+        "run_cap",
+        "description",
+        "program",
+    }
 
+    return {k: v for k, v in config.items() if k in allowed}
+
+
+def main():  # pragma: no cover
     config, name, project, entity = process_args_and_load_config(sys.argv)
-    sweep_id = wandb.sweep(sweep=config, project=project, entity=entity)
+    # check_config(config)
+
+    sweep_id = wandb.sweep(
+        sweep=adjust_config_for_wandb(config), project=project, entity=entity
+    )
     on_cluster = "cluster" in config
 
     command = "WANDB_ENABLED=TRUE wandb agent {entity}/{project}/{sweep_id}"
@@ -167,11 +196,11 @@ def main():  # pragma: no cover
         num_jobs = len(tuple(itertools.product(*all_values)))
         command = replace_variables(command, locals())
 
+        breakpoint()
+
         rel_path = os.path.join("slurm", f"{sweep_id}.slurm")
         os.makedirs(os.path.dirname(rel_path), exist_ok=True)
-        write_jobfile(
-            slurm_arguments, num_jobs, command, directory, rel_path, sweep_id
-        )
+        write_jobfile(slurm_arguments, num_jobs, command, directory, rel_path, sweep_id)
     else:
         command = replace_variables(command, locals())
         cluster_config = None

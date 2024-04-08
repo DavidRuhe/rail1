@@ -22,14 +22,24 @@ def knn(x, y, k):
     return torch.cdist(y, x).topk(k, dim=2, largest=False)
 
 
-def index_at(x, idx):
-    """Indexes a tensor x [B, N, C] along the first dimension with idx [B, M, K] to get [B, M, K, C]"""
-
-    return torch.gather(
-        x.unsqueeze(1).expand(-1, idx.shape[1], -1, -1),
-        2,
-        idx.unsqueeze(-1).expand(-1, -1, -1, x.shape[-1]),
+def index(tensor, idx):
+    """
+    Args:
+        tensor: (B, N, C)
+        idx: (B, ..., N) index tensor
+    Returns:
+        new_points: (B, ..., C) indexed points
+    """
+    B, N, D = tensor.shape
+    view_shape = (B,) + (1,) * (len(idx.shape) - 1)
+    repeat_shape = (1,) + idx.shape[1:]
+    batch_indices = (
+        torch.arange(B, dtype=torch.long, device=tensor.device)
+        .view(view_shape)
+        .repeat(repeat_shape)
     )
+    new_points = tensor[batch_indices, idx, :]
+    return new_points
 
 
 class PointNetLayer(nn.Module):

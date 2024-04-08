@@ -15,8 +15,10 @@ import models
 
 def forward_and_loss_fn(input, model):
 
-    points, labels = input
-    preds = model.forward(points)
+    points_indices, labels = input
+    points, indices = points_indices
+
+    preds = model.forward(points, indices)
     loss = F.cross_entropy(preds, labels, reduction="none")
 
     return loss.mean(0), {

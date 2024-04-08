@@ -10,6 +10,10 @@ from .pointnetpp import PointNetPPClassification
 from .fpsnet import FPSNet
 from .transposenet import TransposeNet
 from .pointnet_clean import PointNetPPClassification as PPClean
+from .pointmlp import pointMLP
+
+def pointmlp():
+    return pointMLP()
 
 def transposenet():
     return TransposeNet()

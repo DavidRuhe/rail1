@@ -72,19 +72,23 @@ def random_subset(points, n):
     return points[idx]
 
 
-def coarse_grain(points, resolutions, deterministic=False):
-    result = []
+def coarse_grain(all_points, resolutions, deterministic=False):
 
+    indices = []
+
+    points = all_points
     for n in resolutions:
         if deterministic:
             p = np.concatenate([points.mean(0, keepdims=True), points], axis=0)
-            c = fpsample.fps_sampling(p, n + 1, start_idx=0)
-            c = p[c[1:]]
-            points = c
+            c = fpsample.fps_sampling(p, n, start_idx=0).astype(np.int64)
+            c = c[1:] - 1
         else:
-            points = random_subset(points, n)
+            c = np.random.choice(len(points), n, replace=False).astype(np.int64)
 
-        result.append(points)
+        assert c.max() < len(points)
+        points = points[c]
+
+        indices.append(c)
 
     # with threadpool_limits(limits=1, user_api="openmp"):
     #     for n in resolutions:
@@ -101,7 +105,7 @@ def coarse_grain(points, resolutions, deterministic=False):
     #             points = kmeans.fit(points).cluster_centers_
 
     #         result.append(points)
-    return result
+    return all_points, indices
 
 
 class ModelNet40STF(data.Dataset):
@@ -149,6 +153,8 @@ class ModelNet40STF(data.Dataset):
         if self.transforms is not None:
             for t in self.transforms:
                 points = t(points)
+
+        p, indices = points
         return points, label
 
         # idx = np.random.choice(len(points), 1024, replace=False)
@@ -177,8 +183,6 @@ class ModelNet40STF(data.Dataset):
         #         all_points.append(points)
 
         # return all_points, label
-
-
 
 
 def load_modelnet40stf_points(

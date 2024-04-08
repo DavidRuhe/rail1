@@ -27,9 +27,9 @@ config = {
     "scheduler": None,
     "fit": {"max_steps": 100_000, "print_interval": 32, "limit_val_batches": float('inf')},
     "parameters": {"seed": {"values": [0]}},
-    "cluster": dict(
-        address="snellius",
-        directory="/home/druhe58/rail1/src/cnf/",
-        slurm="--partition=gpu --time=120:00:00 --gpus-per-node=1",
-    ),
+    # "cluster": dict(
+    #     address="snellius",
+    #     directory="/home/druhe58/rail1/src/cnf/",
+    #     slurm="--partition=gpu --time=120:00:00 --gpus-per-node=1",
+    # ),
 }
