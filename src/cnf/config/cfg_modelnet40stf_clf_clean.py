@@ -22,7 +22,7 @@ config = {
         n_prefetch=4,
     ),
     # "model": dict(name="pointnetpp_clean"),
-    "model": dict(name="trafo_menghao"),
+    "model": dict(name="trafo_hengshuang"),
     "optimizer": {"name": "adam", "lr": 1e-3},
     # "scheduler": {"max_steps": 100_000, "warmup_steps": 1000, "decay_steps": 30000},
     "scheduler": None,

@@ -254,6 +254,8 @@ def fit(
 
     keep_training = not should_stop(train_state, max_steps)
 
+    print("TO DO, calculate current epoch.")
+
     while keep_training:
         # if self.is_distributed:
         #     train_loader.sampler.set_epoch(self.current_epoch)

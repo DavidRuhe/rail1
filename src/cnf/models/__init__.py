@@ -12,6 +12,10 @@ from .transposenet import TransposeNet
 from .pointnet_clean import PointNetPPClassification as PPClean
 from .pointmlp import pointMLP
 from .menghao_trafo import PointTransformerCls
+from .hengshuang_trafo import PointTransformerCls as HSPointTransformerCls
+
+def trafo_hengshuang():
+    return HSPointTransformerCls()
 
 def trafo_menghao():
     return PointTransformerCls()
