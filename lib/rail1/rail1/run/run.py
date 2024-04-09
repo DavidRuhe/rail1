@@ -144,7 +144,6 @@ def process_args_and_load_config(argv, devrun=False):  # pragma: no cover
         for kwarg in argv[2:]:
             config['command'].append(kwarg)
 
-
     name = config["name"]
     project = config["project"]
     entity = config["entity"]
