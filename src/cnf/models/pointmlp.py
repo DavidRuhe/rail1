@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from .pointnet_clean import knn, index
+
 # from pointnet2_ops import pointnet2_utils
 
 
@@ -19,16 +20,14 @@ def get_activation(activation):
     elif activation.lower() == "leakyrelu":
         return nn.LeakyReLU(inplace=True)
     else:
-
         return nn.ReLU(inplace=True)
 
-
 def conv1d_batchnorm_act(
-    in_channels, out_channels, kernel_size=1, bias=True, activation="relu"
+    in_channels, out_channels, kernel_size=1, norm=nn.BatchNorm1d, activation="relu"
 ):
     return nn.Sequential(
-        nn.Conv1d(in_channels, out_channels, kernel_size, bias=bias),
-        nn.BatchNorm1d(out_channels),
+        nn.Conv1d(in_channels, out_channels, kernel_size, bias=norm is not None),
+        norm(out_channels),
         get_activation(activation),
     )
 
@@ -93,11 +92,6 @@ def conv1d_batchnorm_act_res(
         )
 
     return Residual(nn.Sequential(net1, net2))
-
-
-# Example usage:
-# residual_block = conv1d_batchnorm_act_res(64, kernel_size=3, groups=1, res_expansion=0.5, bias=True, activation='relu')
-# output = residual_block(input_tensor)
 
 
 class PreExtraction(nn.Module):
@@ -177,6 +171,37 @@ class PosExtraction(nn.Module):
         return self.operation(x)
 
 
+class GeometricAffineModule(nn.Module):
+
+    def __init__(self, channels, mode="center"):
+        super().__init__()
+
+        self.mode = mode.lower()
+        if self.mode not in ["center", "anchor"]:
+            raise ValueError(
+                f"Unrecognized normalize parameter (self.normalize), set to None. Should be one of [center, anchor]."
+            )
+        self.affine_alpha = nn.Parameter(torch.ones([1, 1, 1, channels]))
+        self.affine_beta = nn.Parameter(torch.zeros([1, 1, 1, channels]))
+
+    def forward(self, grouped_features, new_features, new_xyz=None):
+
+        if self.mode == "center":
+            mean = torch.mean(grouped_features, dim=2, keepdim=True)
+        else:
+            mean = (
+                torch.cat([new_features, new_xyz], dim=-1)
+                if new_xyz is not None
+                else new_features
+            )
+            mean = mean.unsqueeze(dim=-2)  # [B, npoint, 1, d+3]
+
+        std = torch.std(grouped_features - mean, dim=(1, 2, 3), keepdim=True)
+        grouped_features = (grouped_features - mean) / (std + 1e-5)
+        grouped_features = self.affine_alpha * grouped_features + self.affine_beta
+        return grouped_features
+
+
 class LocalGrouper(nn.Module):
     def __init__(
         self, channel, groups, kneighbors, use_xyz=True, normalize="center", **kwargs
@@ -191,23 +216,10 @@ class LocalGrouper(nn.Module):
         self.groups = groups
         self.kneighbors = kneighbors
         self.use_xyz = use_xyz
+
+        self.normalize = nn.Identity()
         if normalize is not None:
-            self.normalize = normalize.lower()
-        else:
-            self.normalize = None
-        if self.normalize not in ["center", "anchor"]:
-            print(
-                f"Unrecognized normalize parameter (self.normalize), set to None. Should be one of [center, anchor]."
-            )
-            self.normalize = None
-        if self.normalize is not None:
-            add_channel = 3 if self.use_xyz else 0
-            self.affine_alpha = nn.Parameter(
-                torch.ones([1, 1, 1, channel + add_channel])
-            )
-            self.affine_beta = nn.Parameter(
-                torch.zeros([1, 1, 1, channel + add_channel])
-            )
+            self.normalize = GeometricAffineModule(channel + use_xyz * 3, normalize)
 
     def forward(self, xyz, features, new_xyz, new_features):
         B, N, C = xyz.shape
@@ -235,21 +247,7 @@ class LocalGrouper(nn.Module):
             grouped_features = torch.cat(
                 [grouped_features, grouped_xyz], dim=-1
             )  # [B, npoint, k, d+3]
-        if self.normalize is not None:
-            if self.normalize == "center":
-                mean = torch.mean(grouped_features, dim=2, keepdim=True)
-            if self.normalize == "anchor":
-                mean = (
-                    torch.cat([new_features, new_xyz], dim=-1)
-                    if self.use_xyz
-                    else new_features
-                )
-                mean = mean.unsqueeze(dim=-2)  # [B, npoint, 1, d+3]
-
-            # std = torch.std((grouped_features-mean).reshape(B,-1),dim=-1,keepdim=True).unsqueeze(dim=-1).unsqueeze(dim=-1)
-            std = torch.std(grouped_features - mean, dim=(1, 2, 3), keepdim=True)
-            grouped_features = (grouped_features - mean) / (std + 1e-5)
-            grouped_features = self.affine_alpha * grouped_features + self.affine_beta
+        grouped_features = self.normalize(grouped_features, new_features, new_xyz if self.use_xyz else None)
 
         new_features = torch.cat(
             [
@@ -396,8 +394,11 @@ def pointMLP(num_classes=40, **kwargs):
         dim_expansion=[2, 2, 2],
         pre_blocks=[2, 2, 2],
         pos_blocks=[2, 2, 2],
-        k_neighbors=[24, 24, 24,],
+        k_neighbors=[
+            24,
+            24,
+            24,
+        ],
         reducers=[2, 2, 2],
-
         **kwargs,
     )
