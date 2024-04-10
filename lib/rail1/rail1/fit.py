@@ -255,6 +255,7 @@ def fit(
     keep_training = not should_stop(train_state, max_steps)
 
     print("TO DO, calculate current epoch.")
+    print("Train loss")
 
     while keep_training:
         # if self.is_distributed:

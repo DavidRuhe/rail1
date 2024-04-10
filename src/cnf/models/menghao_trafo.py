@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 
 # from pointnet2_ops.pointnet2_utils import farthest_point_sample, index_points, square_distance
-from .pointnet_clean import knn, index
+# from .pointnet import knn, index
 from .pointmlp import conv1d_batchnorm_act
 
 

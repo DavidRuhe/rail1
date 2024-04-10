@@ -1,10 +1,11 @@
 import torch
 import torch.nn as nn
-from .pointmlp import knn, index
+# from .pointmlp import knn, index
 import torch.nn.functional as F
 
+# def group()
 
-def sample_and_group(npoint, nsample, xyz, points, idx, returnfps=False):
+def sample_and_group(nsample, xyz, points, idx):
     new_xyz = index(xyz, idx)
     knn_dist, knn_idx = knn(xyz, new_xyz, nsample)
     grouped_xyz = index(xyz, knn_idx)  # [B, npoint, nsample, C]
@@ -21,24 +22,49 @@ def sample_and_group(npoint, nsample, xyz, points, idx, returnfps=False):
     return new_xyz, new_points
 
 
-def sample_and_group_all(xyz, points):
-    """
-    Input:
-        xyz: input points position data, [B, N, 3]
-        points: input points data, [B, N, D]
-    Return:
-        new_xyz: sampled points position data, [B, 1, 3]
-        new_points: sampled points data, [B, 1, N, 3+D]
-    """
-    device = xyz.device
-    B, N, C = xyz.shape
-    new_xyz = torch.zeros(B, 1, C).to(device)
-    grouped_xyz = xyz.view(B, 1, N, C)
-    if points is not None:
-        new_points = torch.cat([grouped_xyz, points.view(B, 1, N, -1)], dim=-1)
-    else:
-        new_points = grouped_xyz
-    return new_xyz, new_points
+# def group(npoint, radius, nsample, xyz, points, returnfps=False, knn=False):
+# def group_to_idx(xyz, features, idx, query_fn, normalize_fn):
+#     # B, N, C = xyz.shape
+#     # S = npoint
+#     # fps_idx = farthest_point_sample(xyz, npoint) # [B, npoint]
+#     new_xyz = index(xyz, idx)
+#     # if knn:
+#     #     dists = square_distance(new_xyz, xyz)  # B x npoint x N
+#     #     idx = dists.argsort()[:, :, :nsample]  # B x npoint x K
+#     # else:
+#     #     idx = query_ball_point(radius, nsample, xyz, new_xyz)
+#     group_idx = query_fn(xyz, new_xyz)
+#     grouped_xyz = index(xyz, idx) # [B, npoint, nsample, C]
+#     # grouped_xyz_norm = grouped_xyz - new_xyz.view(B, S, 1, C)
+
+#     grouped_points = index_points(points, idx)
+#         new_points = torch.cat([grouped_xyz_norm, grouped_points], dim=-1) # [B, npoint, nsample, C+D]
+#     else:
+#         new_points = grouped_xyz_norm
+#     if returnfps:
+#         return new_xyz, new_points, grouped_xyz, fps_idx
+#     else:
+#         return new_xyz, new_points
+
+
+# def sample_and_group_all(xyz, points):
+#     """
+#     Input:
+#         xyz: input points position data, [B, N, 3]
+#         points: input points data, [B, N, D]
+#     Return:
+#         new_xyz: sampled points position data, [B, 1, 3]
+#         new_points: sampled points data, [B, 1, N, 3+D]
+#     """
+#     device = xyz.device
+#     B, N, C = xyz.shape
+#     new_xyz = torch.zeros(B, 1, C).to(device)
+#     grouped_xyz = xyz.view(B, 1, N, C)
+#     if points is not None:
+#         new_points = torch.cat([grouped_xyz, points.view(B, 1, N, -1)], dim=-1)
+#     else:
+#         new_points = grouped_xyz
+#     return new_xyz, new_points
 
 class PointNetSetAbstraction(nn.Module):
     def __init__(self, npoint, radius, nsample, in_channel, mlp, group_all, knn=False):

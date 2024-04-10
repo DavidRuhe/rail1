@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from .pointnet_clean import knn, index
+# from .pointnet import knn, index
 
 # from pointnet2_ops import pointnet2_utils
 
