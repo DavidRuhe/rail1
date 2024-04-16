@@ -44,6 +44,16 @@ from models.functional import pctools, mlp
 #     new_points = tensor[batch_indices, idx, :]
 #     return new_points
 
+class PointMLP(nn.Module):
+    def __init__(self, mlp_spec, bn=True):
+        super().__init__()
+        self.mlp = mlp.conv2d_mlp(mlp_spec, bn)
+
+    def forward(self, pos_features):
+        pos, features = pos_features
+        
+        return self.mlp(pos_features[:, :, None].transpose(1, -1)).transpose(1, -1).squeeze(2)
+
 
 class PointConv(nn.Module):
     def __init__(self, k, mlp_spec, bn=True, use_xyz=True):
@@ -72,7 +82,7 @@ class PointConv(nn.Module):
         return (pos, features)
 
 
-class PointNetFinal(nn.Module):
+class PointConv(nn.Module):
     def __init__(self, k, mlp_spec, bn=True, use_xyz=True):
         super().__init__()
         self.k = k
