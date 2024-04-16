@@ -82,25 +82,25 @@ class PointConv(nn.Module):
         return (pos, features)
 
 
-class PointConv(nn.Module):
-    def __init__(self, k, mlp_spec, bn=True, use_xyz=True):
-        super().__init__()
-        self.k = k
-        self.use_xyz = use_xyz
+# class PointConv(nn.Module):
+#     def __init__(self, k, mlp_spec, bn=True, use_xyz=True):
+#         super().__init__()
+#         self.k = k
+#         self.use_xyz = use_xyz
 
-        if use_xyz:
-            mlp_spec[0] += 3
+#         if use_xyz:
+#             mlp_spec[0] += 3
 
-        self.mlp = mlp.conv2d_mlp(mlp_spec, bn)
+#         self.mlp = mlp.conv2d_mlp(mlp_spec, bn)
 
-    def forward(self, pos_features):
-        loc, features = pos_features
-        if self.use_xyz:
-            features = torch.cat([loc, features], dim=-1)
-        else:
-            features = loc
-        features = self.mlp(features[:, :, None].transpose(1, -1)).transpose(1, -1).squeeze(2)
-        return features
+#     def forward(self, pos_features):
+#         loc, features = pos_features
+#         if self.use_xyz:
+#             features = torch.cat([loc, features], dim=-1)
+#         else:
+#             features = loc
+#         features = self.mlp(features[:, :, None].transpose(1, -1)).transpose(1, -1).squeeze(2)
+#         return features
 
 
 class PointNetPPClassification(nn.Module):
@@ -125,11 +125,14 @@ class PointNetPPClassification(nn.Module):
             PointConv(mlp_spec=[128, 128, 128, 256], use_xyz=self.use_xyz, k=64)
         )
 
-        self.final = PointNetFinal(
-            mlp_spec=[256, 256, 512, 1024],
-            k=64,
-            use_xyz=self.use_xyz,
-        )
+        # self.final = PointNetFinal(
+        #     mlp_spec=[256, 256, 512, 1024],
+        #     k=64,
+        #     use_xyz=self.use_xyz,
+        # )
+        self.global_mlp = mlp.conv1d_mlp(mlp_spec=[256 + 3, 256, 512, 1024])
+        self.global_pool = lambda x: torch.max(x, -1).values
+
 
         self.fc_layer = nn.Sequential(
             nn.Linear(1024, 512, bias=False),
@@ -142,7 +145,6 @@ class PointNetPPClassification(nn.Module):
             nn.Linear(256, 40),
         )
 
-        self.global_pool = lambda x: torch.max(x, 1).values
 
     def forward(self, all_points, idx):
         """PointNet forward pass.
@@ -159,7 +161,11 @@ class PointNetPPClassification(nn.Module):
         for i, module in enumerate(self.SA_modules):
             pos_features = module(pos_features, idx[i + 1])
 
-        features = self.final(pos_features)
-        features = self.global_pool(features)
 
+        pos, features = pos_features
+
+        features = torch.cat([features, pos], dim=-1)
+        features = self.global_mlp(features.transpose(1, 2))
+        features = self.global_pool(features)
+        
         return self.fc_layer(features.squeeze(-1))
