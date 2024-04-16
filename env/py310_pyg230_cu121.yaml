@@ -1,0 +1,22 @@
+# PyTorch Geometric for CUDA 11.7
+# conda env create -f environment.yml
+name: py310_pyg230
+channels:
+  - pytorch
+  - nvidia
+  - pyg
+dependencies:
+  - python=3.10
+  - pytorch=2.1.0
+  - pytorch-cuda=12.1
+  - torchvision=0.16.0
+  - torchaudio=2.1.0
+    # - pytorch-sparse=0.6.17
+    # - pytorch-cluster=1.6.1
+    # - pytorch-scatter=2.1.1
+    # - pytorch-spline-conv=1.2.2
+    # - pyg=2.3.0
+  - pip
+  - pip: 
+    - kaolin
+      - -f https://nvidia-kaolin.s3.us-east-2.amazonaws.com/torch-2.1.0_cu121.html

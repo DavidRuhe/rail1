@@ -5,7 +5,7 @@ from sklearn.cluster import KMeans
 import torch
 from threadpoolctl import threadpool_limits
 import fpsample
-from torch_geometric.nn import fps
+# from torch_geometric.nn import fps
 from rail1.data import batchloader
 import numpy as np
 

@@ -16,20 +16,22 @@ if [[ $HOSTNAME == "c3230" ]]; then
     export ENV_FILE=$ROOT/env/py310_pyg230_cu115.yaml
 elif [[ $HOSTNAME == gcn* ]]; then
     export DATAROOT=$HOME/datasets/
-    export ENV_FILE=$ROOT/env/py310_pyg230_cu117.yaml
+    export ENV_FILE=""
 else
     echo "Unknown hostname $HOSTNAME". Exiting.
     return 1
 fi
 
-ENV_NAME=$(grep 'name:' $ENV_FILE | cut -d ' ' -f 2)
+if [ -n "$ENV_FILE" ]; then
+    ENV_NAME=$(grep 'name:' $ENV_FILE | cut -d ' ' -f 2)
 
-conda env list | grep -q "^$ENV_NAME\s"
-if [ $? -ne 0 ]; then
-    echo "Environment $ENV_NAME not found. Exiting."
-    return 1
-else 
-    conda activate $ENV_NAME
+    conda env list | grep -q "^$ENV_NAME\s"
+    if [ $? -ne 0 ]; then
+        echo "Environment $ENV_NAME not found. Exiting."
+        return 1
+    else 
+        conda activate $ENV_NAME
+    fi
 fi
 
 VENV_DIR='.venv'

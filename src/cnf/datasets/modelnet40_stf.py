@@ -12,7 +12,7 @@ import fpsample
 import time
 from threadpoolctl import threadpool_limits
 import torch
-from torch_geometric.nn import fps
+# from torch_geometric.nn import fps
 # import pctools
 
 
