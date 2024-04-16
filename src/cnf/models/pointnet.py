@@ -1,58 +1,10 @@
-import torch
-import torch.nn.functional as F
 from functools import partial
 
-# from pointnet2_ops import pointnet2_utils
+import torch
+import torch.nn.functional as F
 from torch import nn
-import math
-from models.functional import pctools, mlp
 
-
-# def pointnet_mlp(mlp_spec, bn: bool = True):
-#     layers = []
-#     for i in range(1, len(mlp_spec)):
-#         layers.append(
-#             nn.Conv2d(mlp_spec[i - 1], mlp_spec[i], kernel_size=1, bias=not bn)
-#         )
-#         if bn:
-#             layers.append(nn.BatchNorm2d(mlp_spec[i]))
-#         layers.append(nn.ReLU(True))
-
-#     return nn.Sequential(*layers)
-
-
-# def knn(x, y, k):
-#     return torch.cdist(y, x).topk(k, dim=2, largest=False)
-
-
-# def index(tensor, idx):
-#     """
-#     Args:
-#         tensor: (B, N, C)
-#         idx: (B, ..., N) index tensor
-#     Returns:
-#         new_points: (B, ..., C) indexed points
-#     """
-#     B, N, D = tensor.shape
-#     view_shape = (B,) + (1,) * (len(idx.shape) - 1)
-#     repeat_shape = (1,) + idx.shape[1:]
-#     batch_indices = (
-#         torch.arange(B, dtype=torch.long, device=tensor.device)
-#         .view(view_shape)
-#         .repeat(repeat_shape)
-#     )
-#     new_points = tensor[batch_indices, idx, :]
-#     return new_points
-
-class PointMLP(nn.Module):
-    def __init__(self, mlp_spec, bn=True):
-        super().__init__()
-        self.mlp = mlp.conv2d_mlp(mlp_spec, bn)
-
-    def forward(self, pos_features):
-        pos, features = pos_features
-        
-        return self.mlp(pos_features[:, :, None].transpose(1, -1)).transpose(1, -1).squeeze(2)
+from models.functional import mlp, pctools
 
 
 class PointConv(nn.Module):
@@ -82,27 +34,6 @@ class PointConv(nn.Module):
         return (pos, features)
 
 
-# class PointConv(nn.Module):
-#     def __init__(self, k, mlp_spec, bn=True, use_xyz=True):
-#         super().__init__()
-#         self.k = k
-#         self.use_xyz = use_xyz
-
-#         if use_xyz:
-#             mlp_spec[0] += 3
-
-#         self.mlp = mlp.conv2d_mlp(mlp_spec, bn)
-
-#     def forward(self, pos_features):
-#         loc, features = pos_features
-#         if self.use_xyz:
-#             features = torch.cat([loc, features], dim=-1)
-#         else:
-#             features = loc
-#         features = self.mlp(features[:, :, None].transpose(1, -1)).transpose(1, -1).squeeze(2)
-#         return features
-
-
 class PointNetPPClassification(nn.Module):
     def __init__(self, use_xyz=True, kmeans=False):
         super().__init__()
@@ -113,26 +44,20 @@ class PointNetPPClassification(nn.Module):
         self._build_model()
 
     def _build_model(self):
-        self.SA_modules = nn.ModuleList()
-        self.SA_modules.append(
+        self.convnet = nn.ModuleList()
+        self.convnet.append(
             PointConv(
                 k=64,
                 mlp_spec=[3, 64, 64, 128],
                 use_xyz=self.use_xyz,
             )
         )
-        self.SA_modules.append(
+        self.convnet.append(
             PointConv(mlp_spec=[128, 128, 128, 256], use_xyz=self.use_xyz, k=64)
         )
 
-        # self.final = PointNetFinal(
-        #     mlp_spec=[256, 256, 512, 1024],
-        #     k=64,
-        #     use_xyz=self.use_xyz,
-        # )
         self.global_mlp = mlp.conv1d_mlp(mlp_spec=[256 + 3, 256, 512, 1024])
         self.global_pool = lambda x: torch.max(x, -1).values
-
 
         self.fc_layer = nn.Sequential(
             nn.Linear(1024, 512, bias=False),
@@ -144,7 +69,6 @@ class PointNetPPClassification(nn.Module):
             nn.Dropout(0.5),
             nn.Linear(256, 40),
         )
-
 
     def forward(self, all_points, idx):
         """PointNet forward pass.
@@ -158,14 +82,13 @@ class PointNetPPClassification(nn.Module):
         features = pos
         pos_features = (pos, features)
 
-        for i, module in enumerate(self.SA_modules):
+        for i, module in enumerate(self.convnet):
             pos_features = module(pos_features, idx[i + 1])
-
 
         pos, features = pos_features
 
         features = torch.cat([features, pos], dim=-1)
         features = self.global_mlp(features.transpose(1, 2))
         features = self.global_pool(features)
-        
+
         return self.fc_layer(features.squeeze(-1))
