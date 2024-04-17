@@ -3,7 +3,7 @@ import torch.nn as nn
 
 # from pointnet2_ops.pointnet2_utils import farthest_point_sample, index_points, square_distance
 # from .pointnet import knn, index
-from models.functional import mlp, pctools
+from models.functional import conv_mlp, pctools
 from .pointnet import PointConv
 
 
@@ -71,7 +71,7 @@ class PreExtraction(nn.Module):
         return x
 
 
-class SelfAttentionLayer(nn.Module):
+class ConvSelfAttention(nn.Module):
     def __init__(self, channels):
         super().__init__()
         self.q_conv = nn.Conv1d(channels, channels // 4, 1, bias=False)
@@ -84,12 +84,12 @@ class SelfAttentionLayer(nn.Module):
         self.softmax = nn.Softmax(dim=-1)
 
     def forward(self, x):
+        # x: [B, C, N]
         x_q = self.q_conv(x).permute(0, 2, 1)  # b, n, c
         x_k = self.k_conv(x)  # b, c, n
         x_v = self.v_conv(x)
         energy = x_q @ x_k  # b, n, n
-        attention = self.softmax(energy)
-        attention = attention / (1e-9 + attention.sum(dim=1, keepdims=True))
+        attention = self.softmax(energy / (x_q.size(-1) ** 0.5))
         x_r = x_v @ attention  # b, c, n
         x_r = self.act(self.after_norm(self.trans_conv(x - x_r)))
         x = x + x_r
@@ -99,34 +99,17 @@ class SelfAttentionLayer(nn.Module):
 class StackedAttention(nn.Module):
     def __init__(self, channels=256):
         super().__init__()
-        # self.conv1 = nn.Conv1d(channels, channels, kernel_size=1, bias=False)
-        # self.conv2 = nn.Conv1d(channels, channels, kernel_size=1, bias=False)
+        self.mlp = conv_mlp.conv1d_mlp([channels, channels, channels])
 
-        # self.bn1 = nn.BatchNorm1d(channels)
-        # self.bn2 = nn.BatchNorm1d(channels)
-        # self.l1 = conv1d_batchnorm_act(channels, channels)
-        # self.l2 = conv1d_batchnorm_act(channels, channels)
+        self.sa1 = ConvSelfAttention(channels)
+        self.sa2 = ConvSelfAttention(channels)
+        self.sa3 = ConvSelfAttention(channels)
+        self.sa4 = ConvSelfAttention(channels)
 
-        self.sa1 = SelfAttentionLayer(channels)
-        self.sa2 = SelfAttentionLayer(channels)
-        self.sa3 = SelfAttentionLayer(channels)
-        self.sa4 = SelfAttentionLayer(channels)
-
-        self.relu = nn.ReLU()
 
     def forward(self, x):
-        #
-        # b, 3, npoint, nsample
-        # conv2d 3 -> 128 channels 1, 1
-        # b * npoint, c, nsample
-        # permute reshape
-        batch_size, _, N = x.size()
-
-        # x = self.relu(self.bn1(self.conv1(x)))  # B, D, N
-        # x = self.relu(self.bn2(self.conv2(x)))
-        x = self.l1(x)
-        x = self.l2(x)
-
+        # x: [B, C, N]
+        x = self.mlp(x)
         x1 = self.sa1(x)
         x2 = self.sa2(x1)
         x3 = self.sa3(x2)
@@ -143,37 +126,37 @@ class PointTransformerClsClean(nn.Module):
         d_points = 3
         output_channels = 40
 
-        self.embedding = mlp.conv1d_mlp([d_points, 64, 64])
+        self.embedding = conv_mlp.conv1d_mlp([d_points, 64, 64])
         # self.gather_local_0 = PreExtraction(in_channels=128, out_channels=128)
         # self.gather_local_1 = PreExtraction(in_channels=256, out_channels=256)
         self.conv1 = PointConv(
             k=32,
-            mlp=mlp.conv2d_mlp([128, 128, 128], bn=True),
+            mlp=conv_mlp.conv2d_mlp([128, 128, 128], bn=True),
             cat_features=True,
         )
         self.conv2 = PointConv(
             k=32,
-            mlp=mlp.conv2d_mlp([128, 128, 256], bn=True),
+            mlp=conv_mlp.conv2d_mlp([256, 256, 256], bn=True),
             cat_features=True,
         )
 
-        self.trafo = StackedAttention()
+        self.trafo = StackedAttention(channels=256)
+        self.conv_fuse = conv_mlp.conv1d_mlp([256 + 1024, 1024], bn=True)
+        self.global_pool = lambda x: torch.max(x, 1).values
 
-        self.conv_fuse = nn.Sequential(
-            nn.Conv1d(1280, 1024, kernel_size=1, bias=False),
-            nn.BatchNorm1d(1024),
-            nn.LeakyReLU(negative_slope=0.2),
+        self.classifier = nn.Sequential(
+            nn.Linear(1024, 512),
+            nn.BatchNorm1d(512),
+            nn.ReLU(),
+            nn.Dropout(0.5),
+            nn.Linear(512, 256),
+            nn.BatchNorm1d(256),
+            nn.ReLU(),
+            nn.Dropout(0.5),
+            nn.Linear(256, output_channels),
         )
 
-        self.linear1 = nn.Linear(1024, 512, bias=False)
-        self.bn6 = nn.BatchNorm1d(512)
-        self.dp1 = nn.Dropout(p=0.5)
-        self.linear2 = nn.Linear(512, 256)
-        self.bn7 = nn.BatchNorm1d(256)
-        self.dp2 = nn.Dropout(p=0.5)
-        self.linear3 = nn.Linear(256, output_channels)
-
-        self.relu = nn.ReLU()
+        self.global_pool = lambda x: torch.max(x, 1).values
 
     def forward(self, all_points, idx):
         """PointMLP forward pass.
@@ -187,49 +170,20 @@ class PointTransformerClsClean(nn.Module):
         features = pos
         features = self.embedding(features.transpose(1, 2)).transpose(1, 2)
 
-        # features = features.transpose(1, 2)
-        # new_xyz = index(xyz, indices[1])
-        # new_features = index(features, indices[1])
-        # # x = x.permute(0, 2, 1)
-        # # new_xyz, new_features = sample_and_group(
-        # #     npoint=512, nsample=32, xyz=xyz, points=x
-        # # )
-        # new_features = knn_and_center(
-        #     xyz, new_xyz, features, new_features, 32, concat_xyz=True
-        # )
-        # features = self.gather_local_0(new_features)
-        # # feature = feature_0.permute(0, 2, 1)
-        # # new_xyz, new_features = sample_and_group(
-        # #     npoint=256, nsample=32, xyz=new_xyz, points=feature
-        # # )
-        # xyz = new_xyz
-        # new_xyz = index(xyz, indices[2])
-        # new_features = index(features, indices[2])
-        # new_features = knn_and_center(
-        #     xyz, new_xyz, features, new_features, 32, concat_xyz=True
-        # )
-        # features = self.gather_local_1(new_features)
-
         pos_features = (pos, features)
-        breakpoint()
+
         pos_features = self.conv1(pos_features, idx[1])
         pos_features = self.conv2(pos_features, idx[2])
 
-        breakpoint()
+        pos, features = pos_features
+        
+        h = self.trafo(features.transpose(1, 2)).transpose(1, 2)
 
-        features = features.transpose(1, 2)
-        x = self.trafo(features)
+        x = torch.cat([h, features], dim=2)
 
-        x = torch.cat([x, features], dim=1)
+        x = self.conv_fuse(x.transpose(1, 2)).transpose(1, 2)
+        x = self.global_pool(x)
 
-        x = self.conv_fuse(x)
-        x = torch.max(x, 2)[0]
-        x = x.view(batch_size, -1)
-
-        x = self.relu(self.bn6(self.linear1(x)))
-        x = self.dp1(x)
-        x = self.relu(self.bn7(self.linear2(x)))
-        x = self.dp2(x)
-        x = self.linear3(x)
+        x = self.classifier(x)
 
         return x

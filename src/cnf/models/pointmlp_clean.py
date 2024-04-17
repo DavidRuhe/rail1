@@ -2,9 +2,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from models.functional import mlp, pctools
+from models.functional import conv_mlp, pctools
 
-from .functional import mlp
+from .functional import conv_mlp
 from .functional.activation import get_activation
 from .pointnet import PointConv
 
@@ -79,12 +79,12 @@ class PreExtraction(nn.Module):
         self.conv = PointConv(
             k=k,
             mlp=nn.Sequential(
-                mlp.conv2d_mlp(
+                conv_mlp.conv2d_mlp(
                     [2 * channels + 3 * use_xyz, out_channels],
                     bn=True,
                     activation=activation,
                 ),
-                mlp.conv2d_mlp(
+                conv_mlp.conv2d_mlp(
                     [out_channels, int(out_channels * expansion), out_channels],
                     bn=True,
                     residual=True,
@@ -109,7 +109,7 @@ class PosExtraction(nn.Module):
         activation="relu",
     ):
         super(PosExtraction, self).__init__()
-        self.mlp = mlp.conv1d_mlp(
+        self.mlp = conv_mlp.conv1d_mlp(
             [channels, int(channels * expansion), channels],
             bn=True,
             activation=activation,
@@ -145,7 +145,7 @@ class PointMLP(nn.Module):
         self.class_num = class_num
         self.points = points
 
-        self.embedding = mlp.conv1d_mlp([3, embed_dim], bn=True, activation=activation)
+        self.embedding = conv_mlp.conv1d_mlp([3, embed_dim], bn=True, activation=activation)
 
         self.pre_blocks_list = nn.ModuleList()
         self.pos_blocks_list = nn.ModuleList()

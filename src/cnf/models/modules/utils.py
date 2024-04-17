@@ -1,19 +1,42 @@
-import torch
+from torch import nn
 
 
-def unsqueeze_like(tensor: torch.Tensor, like: torch.Tensor, dim=0):
-    """
-    Unsqueeze last dimensions of tensor to match another tensor's number of dimensions.
+class Transpose(nn.Module):
+    def __init__(self, dim0, dim1):
+        super().__init__()
+        self.dim0 = dim0
+        self.dim1 = dim1
 
-    Args:
-        tensor (torch.Tensor): tensor to unsqueeze
-        like (torch.Tensor): tensor whose dimensions to match
-        dim: int: starting dim, default: 0.
-    """
-    n_unsqueezes = like.ndim - tensor.ndim
-    if n_unsqueezes < 0:
-        raise ValueError(f"tensor.ndim={tensor.ndim} > like.ndim={like.ndim}")
-    elif n_unsqueezes == 0:
-        return tensor
-    else:
-        return tensor[dim * (slice(None),) + (None,) * n_unsqueezes]
+    def forward(self, x):
+        return x.transpose(self.dim0, self.dim1)
+
+
+class Permute(nn.Module):
+    def __init__(self, *dims):
+        super().__init__()
+        self.dims = dims
+
+    def forward(self, x):
+        return x.permute(*self.dims)
+
+
+class Residual(nn.Module):
+    def __init__(self, sub_module):
+        super(Residual, self).__init__()
+        self.sub_module = sub_module
+
+    def forward(self, x):
+        return self.sub_module(x) + x
+
+
+class BatchNormChannelsLast(nn.Module):
+    def __init__(self, dim):
+        super().__init__()
+        self.bn = nn.BatchNorm1d(dim)
+
+    def forward(self, x):
+        """x: [B, N1, N2, ..., Nn, C]"""
+        B, *N, C = x.size()
+        return (
+            self.bn(x.view(B, -1, C).transpose(1, 2)).transpose(1, 2).view(B, *N, C)
+        )

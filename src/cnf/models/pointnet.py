@@ -3,7 +3,7 @@ from functools import partial
 import torch
 from torch import nn
 
-from models.functional import mlp, pctools
+from models.functional import conv_mlp, pctools
 
 
 class PointConv(nn.Module):
@@ -62,17 +62,19 @@ class PointNet(nn.Module):
         self.convnet.append(
             PointConv(
                 k=64,
-                mlp=mlp.conv2d_mlp([3 + 3 * self.use_xyz, 64, 64, 128], bn=True),
+                mlp=conv_mlp.conv2d_mlp([3 + 3 * self.use_xyz, 64, 64, 128], bn=True),
+                use_xyz=True
             )
         )
         self.convnet.append(
             PointConv(
-                mlp=mlp.conv2d_mlp([128 + 3 * self.use_xyz, 128, 128, 256], bn=True),
+                mlp=conv_mlp.conv2d_mlp([128 + 3 * self.use_xyz, 128, 128, 256], bn=True),
                 k=64,
+                use_xyz=True
             )
         )
 
-        self.global_mlp = mlp.conv1d_mlp(mlp_spec=[256 + 3, 256, 512, 1024])
+        self.global_mlp = conv_mlp.conv1d_mlp(mlp_spec=[256 + 3, 256, 512, 1024])
         self.global_pool = lambda x: torch.max(x, 1).values
 
         self.fc_layer = nn.Sequential(
