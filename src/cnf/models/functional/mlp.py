@@ -20,7 +20,35 @@ class Permute(nn.Module):
         return x.permute(*self.dims)
 
 
-def convnd_mlp(mlp_spec, convnd, bn = None):
+class Residual(nn.Module):
+    def __init__(self, sub_module):
+        super(Residual, self).__init__()
+        self.sub_module = sub_module
+
+    def forward(self, x):
+        return self.sub_module(x) + x
+
+
+def get_activation(activation):
+    if activation.lower() == "gelu":
+        return nn.GELU()
+    elif activation.lower() == "rrelu":
+        return nn.RReLU(inplace=True)
+    elif activation.lower() == "selu":
+        return nn.SELU(inplace=True)
+    elif activation.lower() == "silu":
+        return nn.SiLU(inplace=True)
+    elif activation.lower() == "hardswish":
+        return nn.Hardswish(inplace=True)
+    elif activation.lower() == "leakyrelu":
+        return nn.LeakyReLU(inplace=True)
+    elif activation.lower() == "relu":
+        return nn.ReLU(inplace=True)
+    else:
+        raise ValueError(f"Unknown activation function: {activation}.")
+
+
+def convnd_mlp(mlp_spec, convnd, bn=None, residual=False, activation="relu"):
     """
     Creates a nD convolutional MLP.
 
@@ -34,6 +62,9 @@ def convnd_mlp(mlp_spec, convnd, bn = None):
             number of channels in each layer
         convnd (nn.Module): the nD convolutional layer
         bn (bool): whether to use batch normalization
+        residual (bool): whether to use residual connections
+        activation (str): the activation function to use
+
     Returns:
         nn.Sequential: the network
     """
@@ -42,12 +73,15 @@ def convnd_mlp(mlp_spec, convnd, bn = None):
         layers.append(convnd(mlp_spec[i - 1], mlp_spec[i], kernel_size=1, bias=not bn))
         if bn is not None:
             layers.append(bn(mlp_spec[i]))
-        layers.append(nn.ReLU(True))
+        layers.append(get_activation(activation))
 
-    return nn.Sequential(*layers)
+    seq = nn.Sequential(*layers)
+    if residual:
+        seq = Residual(seq)
+    return seq
 
 
-def conv2d_mlp(mlp_spec, bn: bool = True):
+def conv2d_mlp(mlp_spec, bn: bool = True, residual=False, activation="relu"):
     """
     Creates a 2D convolutional MLP.
 
@@ -60,13 +94,18 @@ def conv2d_mlp(mlp_spec, bn: bool = True):
         mlp_spec (List[int]): list of integers specifying the
             number of channels in each layer
         bn (bool): whether to use batch normalization
+        residual (bool): whether to use residual connections
+        activation (str): activation function to use
+
     Returns:
         nn.Sequential: the network
     """
-    return convnd_mlp(mlp_spec, nn.Conv2d, nn.BatchNorm2d if bn else None)
+    return convnd_mlp(
+        mlp_spec, nn.Conv2d, nn.BatchNorm2d if bn else None, residual, activation
+    )
 
 
-def conv1d_mlp(mlp_spec, bn: bool = True):
+def conv1d_mlp(mlp_spec, bn: bool = True, residual=False, activation="relu"):
     """
     Creates a 1D convolutional MLP.
 
@@ -79,7 +118,12 @@ def conv1d_mlp(mlp_spec, bn: bool = True):
         mlp_spec (List[int]): list of integers specifying the
             number of channels in each layer
         bn (bool): whether to use batch normalization
+        residual (bool): whether to use residual connections
+        activation (str): activation function to use
+
     Returns:
         nn.Sequential: the network
     """
-    return convnd_mlp(mlp_spec, nn.Conv1d, nn.BatchNorm1d if bn else None)
+    return convnd_mlp(
+        mlp_spec, nn.Conv1d, nn.BatchNorm1d if bn else None, residual, activation
+    )

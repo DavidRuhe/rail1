@@ -1,40 +1,42 @@
 from functools import partial
 
 import torch
-import torch.nn.functional as F
 from torch import nn
 
 from models.functional import mlp, pctools
 
 
 class PointConv(nn.Module):
-    def __init__(self, k, mlp_spec, bn=True, use_xyz=True):
+    def __init__(
+        self,
+        k,
+        mlp: nn.Module,
+        normalizer=pctools.recenter_groups,
+        use_xyz=False,
+    ):
         super().__init__()
         self.k = k
+        self.mlp = mlp
         self.use_xyz = use_xyz
-
-        if use_xyz:
-            mlp_spec[0] += 3
-
-        self.mlp_spec = mlp_spec
-
-        self.mlp = mlp.conv2d_mlp(mlp_spec, bn)
+        self.normalizer = normalizer
         self.grouper = partial(
             pctools.group_to_idx,
             query_fn=partial(pctools.knn, k=k),
-            normalize_fn=pctools.recenter_groups,
+            normalize_fn=self.normalizer,
         )
 
         self.aggr = lambda tensor: torch.max(tensor, -2).values
 
     def forward(self, pos_features, idx):
-        pos, grouped_features = self.grouper(pos_features, idx)
+        grouped_pos, pos, grouped_features, features = self.grouper(pos_features, idx)
+        if self.use_xyz:
+            grouped_features = torch.cat([grouped_pos, grouped_features], dim=-1)
         grouped_features = self.mlp(grouped_features.transpose(1, -1)).transpose(1, -1)
         features = self.aggr(grouped_features)
         return (pos, features)
 
 
-class PointNetPPClassification(nn.Module):
+class PointNet(nn.Module):
     def __init__(self, use_xyz=True, kmeans=False):
         super().__init__()
 
@@ -48,16 +50,18 @@ class PointNetPPClassification(nn.Module):
         self.convnet.append(
             PointConv(
                 k=64,
-                mlp_spec=[3, 64, 64, 128],
-                use_xyz=self.use_xyz,
+                mlp=mlp.conv2d_mlp([3 + 3 * self.use_xyz, 64, 64, 128], bn=True),
             )
         )
         self.convnet.append(
-            PointConv(mlp_spec=[128, 128, 128, 256], use_xyz=self.use_xyz, k=64)
+            PointConv(
+                mlp=mlp.conv2d_mlp([128 + 3 * self.use_xyz, 128, 128, 256], bn=True),
+                k=64,
+            )
         )
 
         self.global_mlp = mlp.conv1d_mlp(mlp_spec=[256 + 3, 256, 512, 1024])
-        self.global_pool = lambda x: torch.max(x, -1).values
+        self.global_pool = lambda x: torch.max(x, 1).values
 
         self.fc_layer = nn.Sequential(
             nn.Linear(1024, 512, bias=False),
@@ -88,7 +92,7 @@ class PointNetPPClassification(nn.Module):
         pos, features = pos_features
 
         features = torch.cat([features, pos], dim=-1)
-        features = self.global_mlp(features.transpose(1, 2))
+        features = self.global_mlp(features.transpose(1, 2)).transpose(1, 2)
         features = self.global_pool(features)
 
         return self.fc_layer(features.squeeze(-1))

@@ -9,8 +9,9 @@ from .vn_dcgnn import VNDGCNN
 from .pointnetpp import PointNetPPClassification
 from .fpsnet import FPSNet
 from .transposenet import TransposeNet
-from .pointnet import PointNetPPClassification as PPClean
+from .pointnet import PointNet
 from .pointmlp import pointMLP
+from .pointmlp_clean import construct_pointmlp
 from .menghao_trafo import PointTransformerCls
 from .hengshuang_trafo import PointTransformerCls as HSPointTransformerCls
 
@@ -19,6 +20,9 @@ def trafo_hengshuang():
 
 def trafo_menghao():
     return PointTransformerCls()
+
+def pointmlp_clean():
+    return construct_pointmlp()
 
 
 def pointmlp():
@@ -36,8 +40,8 @@ def pointnetpp():
 def pointnetpp_kmeans():
     return PointNetPPClassification(kmeans=True)
 
-def pointnetpp_clean():
-    return PPClean()
+def pointnet():
+    return PointNet()
 
 def vn_dgcnn():
     return VNDGCNN()

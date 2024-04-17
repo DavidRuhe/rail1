@@ -77,7 +77,12 @@ def ball_query(pos1, pos2, k, radius):
     return group_idx
 
 
-def recenter_groups(grouped_pos, pos):
+def recenter_groups(
+    grouped_pos,
+    pos,
+    grouped_features: torch.Tensor | None,
+    pos_features: torch.Tensor | None,
+):
     """
     Normalizes the coordinates of the groups in grouped_pos with respect to pos.
 
@@ -88,13 +93,19 @@ def recenter_groups(grouped_pos, pos):
     Args:
         grouped_pos: (B, M, K, D) coordinates of the groups in grouped_pos
         pos: (B, M, D) coordinates of the points in pos
+        grouped_features: (B, M, K, F) features of the group members (optional)
+        pos_features: (B, M, F) features of the points (optional)
+
     Returns:
         normalized: (B, M, K, D) normalized coordinates of the groups
+        pos: (B, M, D) coordinates of the points
+        grouped_features: (B, M, K, F) features of the group members (optional)
+        pos_features: (B, M, F) features of the points (optional)
     """
 
     B, N, K, D = grouped_pos.shape
     B, N, D = pos.shape
-    return grouped_pos - pos[:, :, None]
+    return grouped_pos - pos[:, :, None], pos, grouped_features, pos_features
 
 
 def group_to_idx(pos_features, idx, query_fn, normalize_fn):
@@ -107,23 +118,40 @@ def group_to_idx(pos_features, idx, query_fn, normalize_fn):
     and concatenates the normalized coordinates with the features.
 
     Args:
-        pos_features: tuple of (B, N, D) coordinates and (B, N, C) features of the original point cloud
-        idx: (B, M) centroid index tensor
-        query_fn: function to query neighbors, e.g., knn or ball_query
-        normalize_fn: function to normalize the groups, e.g., recenter_groups
+        pos_features (tuple): A tuple containing the coordinates and features of the original point cloud.
+            pos (torch.Tensor): The coordinates of the original point cloud with shape (B, N, D).
+            features (torch.Tensor): The features of the original point cloud with shape (B, N, C),
+
+        idx (torch.Tensor): The centroid index tensor with shape (B, M),
+            where B is the batch size and M is the number of centroids.
+
+        query_fn (function): A function to query neighbors, e.g., knn or ball_query.
+
+        normalize_fn (function): A function to normalize the groups, e.g., recenter_groups.
 
     Returns:
-        new_pos: (B, M, D) coordinates of the new point cloud
-        new_features: (B, M, C + D) features of the new point cloud
+        tuple: A tuple containing the coordinates and features of the grouped point cloud.
+            grouped_pos (torch.Tensor): The normalized coordinates of the grouped point cloud with shape (B, M, K, D).
+            pos (torch.Tensor): The coordinates of the original point cloud with shape (B, N, D).
+            grouped_features (torch.Tensor): The features of the grouped point cloud with shape (B, M, K, C).
+            features (torch.Tensor): The features of the original point cloud with shape (B, N, C).
     """
     pos, features = pos_features
     new_pos = index(pos, idx)
     group_idx = query_fn(pos, new_pos)
+
     grouped_pos = index(pos, group_idx)
-    grouped_pos_norm = normalize_fn(grouped_pos, new_pos)
     grouped_features = index(features, group_idx)
-    grouped_features = torch.cat([grouped_pos_norm, grouped_features], dim=-1)
-    return new_pos, grouped_features
+
+    features = index(
+        features, idx
+    )  # Note: not always needed, perhaps make optional later.
+
+    grouped_pos_norm, pos, grouped_features_norm, features = normalize_fn(
+        grouped_pos, new_pos, grouped_features, features
+    )
+
+    return grouped_pos_norm, pos, grouped_features_norm, features
 
 
 if __name__ == "__main__":

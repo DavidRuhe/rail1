@@ -61,7 +61,9 @@ def conv1d_batchnorm_act_res(
         nn.BatchNorm1d(int(channel * res_expansion)),
         act,
     )
+    print('hi')
     if groups > 1:
+        raise NotImplementedError("Grouped convolutions not supported in this model.")
         net2 = nn.Sequential(
             nn.Conv1d(
                 in_channels=int(channel * res_expansion),
@@ -114,7 +116,7 @@ class PreExtraction(nn.Module):
         super(PreExtraction, self).__init__()
         in_channels = 3 + 2 * channels if use_xyz else 2 * channels
         self.transfer = conv1d_batchnorm_act(
-            in_channels, out_channels, bias=bias, activation=activation
+            in_channels, out_channels, activation=activation
         )
         operation = []
         for _ in range(blocks):
@@ -162,7 +164,7 @@ class PosExtraction(nn.Module):
             operation.append(
                 # ConvBNReLURes1D(channels, groups=groups, res_expansion=res_expansion, bias=bias, activation=activation)
                 conv1d_batchnorm_act(
-                    channels, channels, bias=bias, activation=activation
+                    channels, channels, activation=activation
                 )
             )
         self.operation = nn.Sequential(*operation)
@@ -283,7 +285,7 @@ class PointMLP(nn.Module):
         self.class_num = class_num
         self.points = points
         self.embedding = conv1d_batchnorm_act(
-            3, embed_dim, bias=bias, activation=activation
+            3, embed_dim, activation=activation
         )
         assert (
             len(pre_blocks)
