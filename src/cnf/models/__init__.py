@@ -13,6 +13,7 @@ from .pointnet import PointNet
 from .pointmlp import pointMLP
 from .pointmlp_clean import construct_pointmlp
 from .menghao_trafo import PointTransformerCls
+from .menghao_trafo_clean import PointTransformerClsClean
 from .hengshuang_trafo import PointTransformerCls as HSPointTransformerCls
 
 def trafo_hengshuang():
@@ -20,6 +21,9 @@ def trafo_hengshuang():
 
 def trafo_menghao():
     return PointTransformerCls()
+
+def trafo_menghao_clean():
+    return PointTransformerClsClean()
 
 def pointmlp_clean():
     return construct_pointmlp()

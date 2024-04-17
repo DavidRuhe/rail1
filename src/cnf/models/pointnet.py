@@ -13,11 +13,13 @@ class PointConv(nn.Module):
         mlp: nn.Module,
         normalizer=pctools.recenter_groups,
         use_xyz=False,
+        cat_features=False,
     ):
         super().__init__()
         self.k = k
         self.mlp = mlp
         self.use_xyz = use_xyz
+        self.cat_features = cat_features
         self.normalizer = normalizer
         self.grouper = partial(
             pctools.group_to_idx,
@@ -31,6 +33,16 @@ class PointConv(nn.Module):
         grouped_pos, pos, grouped_features, features = self.grouper(pos_features, idx)
         if self.use_xyz:
             grouped_features = torch.cat([grouped_pos, grouped_features], dim=-1)
+
+        if self.cat_features:
+            grouped_features = torch.cat(
+                [
+                    grouped_features,
+                    features[:, :, None].expand(-1, -1, grouped_features.size(2), -1),
+                ],
+                dim=-1,
+            )
+
         grouped_features = self.mlp(grouped_features.transpose(1, -1)).transpose(1, -1)
         features = self.aggr(grouped_features)
         return (pos, features)

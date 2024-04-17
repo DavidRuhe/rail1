@@ -61,15 +61,6 @@ class GeometricAffineModule(nn.Module):
         grouped_features = (grouped_features - mean) / (std + 1e-5)
         grouped_features = self.affine_alpha * grouped_features + self.affine_beta
 
-        if self.cat_anchor:
-            grouped_features = torch.cat(
-                [
-                    grouped_features,
-                    features[:, :, None].expand(-1, -1, grouped_features.size(2), -1),
-                ],
-                dim=-1,
-            )
-
         return grouped_pos, pos, grouped_features, features
 
 
@@ -103,6 +94,7 @@ class PreExtraction(nn.Module):
             normalizer=GeometricAffineModule(
                 channels + 3 * use_xyz, mode=normalize_mode
             ),
+            cat_features=True
         )
 
     def forward(self, pos_features, idx):
