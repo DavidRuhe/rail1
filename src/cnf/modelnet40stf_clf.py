@@ -79,6 +79,9 @@ def main(config):
     optimizer = getattr(rail1.optimizers, config["optimizer"].pop("name"))(
         model, **config["optimizer"]
     )
+    scheduler = getattr(rail1.schedulers, config["scheduler"].pop("name"))(
+        optimizer, **config["scheduler"]
+    )
 
     device = config["device"]
 
@@ -100,6 +103,7 @@ def main(config):
         model,
         optimizer,
         data,
+        scheduler=scheduler,
         forward_and_loss_fn=forward_and_loss_fn,
         logging_fn=logging_fn,
         eval_batch_fn=functools.partial(

@@ -15,6 +15,10 @@ from .pointmlp_clean import construct_pointmlp
 from .menghao_trafo import PointTransformerCls
 from .menghao_trafo_clean import PointTransformerClsClean
 from .hengshuang_trafo import PointTransformerCls as HSPointTransformerCls
+from .menghao_trafo_new import Pct
+
+def trafo_menghao_new():
+    return Pct()
 
 def trafo_hengshuang():
     return HSPointTransformerCls()

@@ -24,8 +24,13 @@ config = {
     # "model": dict(name="pointnetpp_clean"),
     "model": dict(name="pointnet"),
     "optimizer": {"name": "adam", "lr": 1e-3},
-    # "scheduler": {"max_steps": 100_000, "warmup_steps": 1000, "decay_steps": 30000},
-    "scheduler": None,
+    # "scheduler": dict()"max_steps": 100_000, "warmup_steps": 1000, "decay_steps": 90_000},
+    "scheduler": dict(
+        name="CosineAnnealingLR",
+        max_steps=100_000,
+        warmup_steps=1000,
+        decay_steps=90_000,
+    ),
     "fit": {"max_steps": 100_000, "print_interval": 32, "limit_val_batches": float('inf')},
     "parameters": {"seed": {"values": [0]}},
     # "cluster": dict(
