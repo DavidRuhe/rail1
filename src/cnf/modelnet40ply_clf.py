@@ -15,13 +15,11 @@ import models
 
 def forward_and_loss_fn(input, model):
 
-    points_indices, labels = input
-    points, indices = points_indices
+    points, labels = input
+    preds = model.forward(points)
+    labels = labels.squeeze(-1)
 
-    preds = model.forward(points, indices)
     loss = F.cross_entropy(preds, labels, reduction="none")
-    
-    breakpoint()
 
     return loss.mean(0), {
         "loss": loss,
@@ -81,9 +79,12 @@ def main(config):
     optimizer = getattr(rail1.optimizers, config["optimizer"].pop("name"))(
         model, **config["optimizer"]
     )
-    scheduler = getattr(rail1.schedulers, config["scheduler"].pop("name"))(
-        optimizer, **config["scheduler"]
-    )
+    if "scheduler" in config:
+        scheduler = getattr(rail1.schedulers, config["scheduler"].pop("name"))(
+            optimizer, **config["scheduler"]
+        )
+    else:
+        scheduler = None
 
     device = config["device"]
 

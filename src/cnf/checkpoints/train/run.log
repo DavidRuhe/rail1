@@ -1,0 +1,68 @@
+Namespace(exp_name='train', dataset='modelnet40', batch_size=32, test_batch_size=16, epochs=250, use_sgd=True, lr=0.0001, momentum=0.9, no_cuda=False, seed=1, eval=False, num_points=1024, dropout=0.5, model_path='')
+Using GPU : 0 from 1 devices
+Namespace(exp_name='train', dataset='modelnet40', batch_size=32, test_batch_size=16, epochs=250, use_sgd=True, lr=0.0001, momentum=0.9, no_cuda=False, seed=1, eval=False, num_points=1024, dropout=0.5, model_path='')
+Using GPU : 0 from 1 devices
+Namespace(exp_name='train', dataset='modelnet40', batch_size=32, test_batch_size=16, epochs=250, use_sgd=True, lr=0.0001, momentum=0.9, no_cuda=False, seed=1, eval=False, num_points=1024, dropout=0.5, model_path='')
+Using GPU : 0 from 1 devices
+Namespace(exp_name='train', dataset='modelnet40', batch_size=32, test_batch_size=16, epochs=250, use_sgd=True, lr=0.0001, momentum=0.9, no_cuda=False, seed=1, eval=False, num_points=1024, dropout=0.5, model_path='')
+Using GPU : 0 from 1 devices
+Train 0, loss: 2.891269, train acc: 0.366857, train avg acc: 0.195090
+Test 0, loss: 2.429397, test acc: 0.477715, test avg acc: 0.369064
+Namespace(exp_name='train', dataset='modelnet40', batch_size=32, test_batch_size=16, epochs=250, use_sgd=True, lr=0.0001, momentum=0.9, no_cuda=False, seed=1, eval=False, num_points=1024, dropout=0.5, model_path='')
+Using GPU : 0 from 1 devices
+Train 0, loss: 2.936619, train acc: 0.343648, train avg acc: 0.180360
+Test 0, loss: 2.459993, test acc: 0.494327, test avg acc: 0.352965
+Train 1, loss: 2.405211, train acc: 0.546722, train avg acc: 0.358925
+Test 1, loss: 2.115161, test acc: 0.631686, test avg acc: 0.500203
+Train 2, loss: 2.223103, train acc: 0.621234, train avg acc: 0.447832
+Test 2, loss: 1.989051, test acc: 0.720421, test avg acc: 0.578907
+Namespace(exp_name='train', dataset='modelnet40', batch_size=32, test_batch_size=16, epochs=250, use_sgd=True, lr=0.0001, momentum=0.9, no_cuda=False, seed=1, eval=False, num_points=1024, dropout=0.5, model_path='')
+Using GPU : 0 from 1 devices
+Train 0, loss: 2.325949, train acc: 0.376730, train avg acc: 0.209301
+Test 0, loss: 1.543346, test acc: 0.528363, test avg acc: 0.412907
+Train 1, loss: 1.531296, train acc: 0.555273, train avg acc: 0.383564
+Test 1, loss: 1.072819, test acc: 0.692058, test avg acc: 0.548122
+Namespace(exp_name='train', dataset='modelnet40', batch_size=32, test_batch_size=16, epochs=250, use_sgd=True, lr=0.0001, momentum=0.9, no_cuda=False, seed=1, eval=False, num_points=1024, dropout=0.5, model_path='')
+Using GPU : 0 from 1 devices
+Namespace(exp_name='train', dataset='modelnet40', batch_size=32, test_batch_size=16, epochs=250, use_sgd=True, lr=0.0001, momentum=0.9, no_cuda=False, seed=1, eval=False, num_points=1024, dropout=0.5, model_path='')
+Using GPU : 0 from 1 devices
+Namespace(exp_name='train', dataset='modelnet40', batch_size=32, test_batch_size=16, epochs=250, use_sgd=True, lr=0.0001, momentum=0.9, no_cuda=False, seed=1, eval=False, num_points=1024, dropout=0.5, model_path='')
+Using GPU : 0 from 1 devices
+Namespace(exp_name='train', dataset='modelnet40', batch_size=32, test_batch_size=16, epochs=250, use_sgd=True, lr=0.0001, momentum=0.9, no_cuda=False, seed=1, eval=False, num_points=1024, dropout=0.5, model_path='')
+Using GPU : 0 from 1 devices
+Train 0, loss: 2.378079, train acc: 0.360749, train avg acc: 0.199709
+Test 0, loss: 1.552547, test acc: 0.540924, test avg acc: 0.423948
+Train 1, loss: 1.642563, train acc: 0.524328, train avg acc: 0.358791
+Test 1, loss: 1.219242, test acc: 0.633306, test avg acc: 0.522163
+Train 2, loss: 1.352573, train acc: 0.602097, train avg acc: 0.446654
+Test 2, loss: 0.896305, test acc: 0.750000, test avg acc: 0.614680
+Train 3, loss: 1.204561, train acc: 0.636808, train avg acc: 0.491478
+Test 3, loss: 0.925075, test acc: 0.711102, test avg acc: 0.596581
+Train 4, loss: 1.161899, train acc: 0.650143, train avg acc: 0.500947
+Test 4, loss: 0.867625, test acc: 0.732982, test avg acc: 0.634564
+Namespace(exp_name='train', dataset='modelnet40', batch_size=32, test_batch_size=16, epochs=250, use_sgd=True, lr=0.0001, momentum=0.9, no_cuda=False, seed=1, eval=False, num_points=1024, dropout=0.5, model_path='')
+Using GPU : 0 from 1 devices
+Namespace(exp_name='train', dataset='modelnet40', batch_size=32, test_batch_size=16, epochs=250, use_sgd=True, lr=0.0001, momentum=0.9, no_cuda=False, seed=1, eval=False, num_points=1024, dropout=0.5, model_path='')
+Using GPU : 0 from 1 devices
+Namespace(exp_name='train', dataset='modelnet40', batch_size=32, test_batch_size=16, epochs=250, use_sgd=True, lr=0.0001, momentum=0.9, no_cuda=False, seed=1, eval=False, num_points=1024, dropout=0.5, model_path='')
+Using GPU : 0 from 1 devices
+Namespace(exp_name='train', dataset='modelnet40', batch_size=32, test_batch_size=16, epochs=250, use_sgd=True, lr=0.0001, momentum=0.9, no_cuda=False, seed=1, eval=False, num_points=1024, dropout=0.5, model_path='')
+Using GPU : 0 from 1 devices
+Namespace(exp_name='train', dataset='modelnet40', batch_size=32, test_batch_size=16, epochs=250, use_sgd=True, lr=0.0001, momentum=0.9, no_cuda=False, seed=1, eval=False, num_points=1024, dropout=0.5, model_path='')
+Using GPU : 0 from 1 devices
+Namespace(exp_name='train', dataset='modelnet40', batch_size=32, test_batch_size=16, epochs=250, use_sgd=True, lr=0.0001, momentum=0.9, no_cuda=False, seed=1, eval=False, num_points=1024, dropout=0.5, model_path='')
+Using GPU : 0 from 1 devices
+Namespace(exp_name='train', dataset='modelnet40', batch_size=32, test_batch_size=16, epochs=250, use_sgd=True, lr=0.0001, momentum=0.9, no_cuda=False, seed=1, eval=False, num_points=1024, dropout=0.5, model_path='')
+Using GPU : 0 from 1 devices
+Namespace(exp_name='train', dataset='modelnet40', batch_size=32, test_batch_size=16, epochs=250, use_sgd=True, lr=0.0001, momentum=0.9, no_cuda=False, seed=1, eval=False, num_points=1024, dropout=0.5, model_path='')
+Using GPU : 0 from 1 devices
+Namespace(exp_name='train', dataset='modelnet40', batch_size=32, test_batch_size=16, epochs=250, use_sgd=True, lr=0.0001, momentum=0.9, no_cuda=False, seed=1, eval=False, num_points=1024, dropout=0.5, model_path='')
+Using GPU : 0 from 1 devices
+Namespace(exp_name='train', dataset='modelnet40', batch_size=32, test_batch_size=16, epochs=250, use_sgd=True, lr=0.0001, momentum=0.9, no_cuda=False, seed=1, eval=False, num_points=1024, dropout=0.5, model_path='')
+Using GPU : 0 from 1 devices
+Namespace(exp_name='train', dataset='modelnet40', batch_size=32, test_batch_size=16, epochs=250, use_sgd=True, lr=0.0001, momentum=0.9, no_cuda=False, seed=1, eval=False, num_points=1024, dropout=0.5, model_path='')
+Using GPU : 0 from 1 devices
+Namespace(exp_name='train', dataset='modelnet40', batch_size=32, test_batch_size=16, epochs=250, use_sgd=True, lr=0.0001, momentum=0.9, no_cuda=False, seed=1, eval=False, num_points=1024, dropout=0.5, model_path='')
+Using GPU : 0 from 1 devices
+Namespace(exp_name='train', dataset='modelnet40', batch_size=32, test_batch_size=16, epochs=250, use_sgd=True, lr=0.0001, momentum=0.9, no_cuda=False, seed=1, eval=False, num_points=1024, dropout=0.5, model_path='')
+Using GPU : 0 from 1 devices

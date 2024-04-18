@@ -172,10 +172,7 @@ class Pct(nn.Module):
         self.dp2 = nn.Dropout(p=.5)
         self.linear3 = nn.Linear(256, output_channels)
 
-    def forward(self, x, _):
-
-        idx = torch.randint(0, x.shape[1], (x.shape[0], 1024))
-        x = pctools.index(x, idx)
+    def forward(self, x):
 
         x = x.permute(0, 2, 1)
 

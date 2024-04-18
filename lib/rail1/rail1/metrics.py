@@ -17,6 +17,9 @@ def accuracy(metric_dicts, is_training):
         return {}
     predictions = torch.cat(metric_dicts["logits"])
     targets = torch.cat(metric_dicts["targets"])
+    assert targets.dim() == 1
+    assert predictions.dim() == 2
+    assert len(targets) == len(predictions)
     return {
         "accuracy": (predictions.argmax(dim=-1) == targets).float().mean()
     }

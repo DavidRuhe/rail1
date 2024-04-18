@@ -10,6 +10,10 @@ from .random_surfaces import load_random_surface_dataset
 from .modelnet40_points import load_modelnet40_points
 from .modelnet40_stf import load_modelnet40stf_points
 from .modelnet40_kmeans import load_modelnet40stf_points_kmeans
+from .modelnet40_ply import load_modelnet40_ply
+
+def modelnet40_ply(**kwargs):
+    return load_modelnet40_ply(**kwargs)
 
 def modelnet40_points(**kwargs):
     return load_modelnet40_points(**kwargs)

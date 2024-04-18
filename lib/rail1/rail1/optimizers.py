@@ -20,3 +20,7 @@ def radam(model, **kwargs):
 
 def adamw(model, **kwargs):
     return optim.AdamW(_concat_if_iterable(model), **kwargs)
+
+
+def sgd(model, **kwargs):
+    return optim.SGD(_concat_if_iterable(model), **kwargs)
