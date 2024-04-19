@@ -87,36 +87,20 @@ def load_modelnet40_ply(*, batch_size=32, num_workers=4, n_prefetch=2):
 
     from torch.utils.data import DataLoader
 
-    # train_loader = DataLoader(
-    #     train,
-    #     batch_size=batch_size,
-    #     num_workers=num_workers,
-    #     shuffle=True,
-    #     drop_last=True,
-    # )
-
-    # test_loader = DataLoader(
-    #     test,
-    #     batch_size=batch_size,
-    #     num_workers=num_workers,
-    #     shuffle=False,
-    #     drop_last=False,
-    # )
-
-    train_loader = batchloader.BatchLoader(
+    train_loader = DataLoader(
         train,
         batch_size=batch_size,
         num_workers=num_workers,
-        n_prefetch=n_prefetch,
         shuffle=True,
+        drop_last=True,
     )
 
-    test_loader = batchloader.BatchLoader(
+    test_loader = DataLoader(
         test,
         batch_size=batch_size,
         num_workers=num_workers,
-        n_prefetch=n_prefetch,
         shuffle=False,
+        drop_last=False,
     )
 
     idx_to_label = {v: k for k, v in LABEL_TO_IDX.items()}

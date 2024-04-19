@@ -95,9 +95,11 @@ def test_loop(
         prefix = "test"
 
     t0 = time.time()
-    for batch_idx in range(num_iterations):
+    for batch_idx, batch in enumerate(test_loader):
+        
+        if batch_idx >= num_iterations:
+            break
 
-        batch = test_loader[batch_idx]
         batch = to_device(batch, train_state["device"])
         _, outputs = forward_and_loss_fn(batch, model)
 
@@ -254,163 +256,165 @@ def fit(
 
     keep_training = not should_stop(train_state, max_steps)
 
-    print("TO DO, calculate current epoch.")
-    print("Train loss")
-
     while keep_training:
-        # if self.is_distributed:
-        #     train_loader.sampler.set_epoch(self.current_epoch)
-        # for batch in train_loader:
-        # for batch_idx in range(max_steps)
-        batch = train_loader[train_state["global_step"]]
 
-        loss = train_step(
-            train_state, model, optimizer, forward_and_loss_fn, batch, print_interval
-        )
+        train_state["current_epoch"] += 1
 
-        if scheduler is not None:
-            scheduler.step()  # pragma: no cover
+        for batch_idx, batch in enumerate(train_loader):
 
-        if train_state["global_step"] % print_interval == 0:
-            t1 = time.time()
-            # if self.is_distributed:
-            #     train_metrics = model.module.train_metrics.compute()
-            #     model.module.train_metrics.reset()
-            # else:
-            train_metrics = apply_metric_fns(
-                train_state["train_metrics"], metrics_fns, is_training=True
-            )
-            s_it = (t1 - t0) / (
-                train_state["global_step"] + 1 - train_state["last_global_step"]
-            )
-            train_metrics["s_it"] = s_it
-
-            lr = optimizer.param_groups[0]["lr"]
-            train_metrics["lr"] = lr
-
-            train_metrics["epoch"] = train_state["current_epoch"]
-
-            train_metrics["grad_norm_mean"] = sum(
-                grad_norm for grad_norm in train_state["train_metrics"]["gradient_norm"]
-            ) / len(train_state["train_metrics"]["gradient_norm"])
-            train_metrics["grad_norm_max"] = max(
-                train_state["train_metrics"]["gradient_norm"]
-            )
-
-            train_metrics["param_norm_mean"] = sum(
-                param_norm
-                for param_norm in train_state["train_metrics"]["parameter_norm"]
-            ) / len(train_state["train_metrics"]["parameter_norm"])
-            train_metrics["param_norm_max"] = max(
-                train_state["train_metrics"]["parameter_norm"]
-            )
-
-            train_metrics["total_parameters"] = train_state["total_parameters"]
-
-            td = datetime.timedelta(seconds=t1 - train_state["starting_time"])
-            loss_print = train_metrics["loss"] if "loss" in train_metrics else loss
-            print(
-                f"{printing.format_timedelta(td, '[{d}-{h}:{m}:{s}]')} Step: {train_state['global_step']} [{1/s_it:.2f} it/s] (Training) Loss: {loss_print:.4f}"
-            )
-
-            if logging_fn is not None:
-                train_metrics = printing.add_prefix(train_metrics, "train")
-                logging_fn(train_metrics, step=train_state["global_step"])
-            train_state["train_metrics"].clear()
-
-            t0 = time.time()
-            train_state["last_global_step"] = train_state["global_step"]
-
-        should_validate = train_state["global_step"] % val_check_interval == 0 and (
-            train_state["global_step"] > 0 if skip_initial_eval else True
-        )
-
-        if should_validate:
-            val_metrics = None
-            test_metrics = None
-            if datasets["val_loader"] is not None and limit_val_batches > 0:
-                if train_state["global_step"] == 0 and skip_initial_eval:
-                    print("Skipping initial evaluation.")  # pragma: no cover
-
-                val_metrics = test_loop(
-                    train_state,
-                    model,
-                    forward_and_loss_fn,
-                    datasets["val_loader"],
-                    metrics_fns,
-                    logging_fn,
-                    eval_batch_fn,
-                    validation=True,
-                    limit_batches=limit_val_batches,
-                    print_interval=print_interval,
-                )
-
-            t0 = time.time()
-            train_state["last_global_step"] = train_state["global_step"]
-
-            if datasets["test_loader"] is not None and limit_val_batches > 0:
-                test_metrics = test_loop(
-                    train_state,
-                    model,
-                    forward_and_loss_fn,
-                    datasets["test_loader"],
-                    metrics_fns,
-                    logging_fn,
-                    eval_batch_fn,
-                    limit_batches=limit_val_batches,
-                    print_interval=print_interval,
-                )
-
-            metrics = {}
-            if val_metrics is not None:
-                metrics.update(val_metrics)
-            if test_metrics is not None:
-                metrics.update(test_metrics)
-
-            checkpoint.save_checkpoint(
-                checkpoint_dir,
-                model,
+            loss = train_step(
                 train_state,
-                optimizer,
-                metrics=metrics,
-            )
-
-        train_state["global_step"] += 1
-        train_state["batch_index"] = (
-            train_state["global_step"]
-            * train_loader.batch_size
-            // len(train_loader.dataset)
-        )
-
-        if train_state["should_raise"] is not None:
-            raise train_state["should_raise"]  # pragma: no cover
-
-        if should_stop(train_state, max_steps):
-            val_metrics = None
-            if datasets["val_loader"] is not None and limit_val_batches > 0:
-                val_metrics = test_loop(
-                    train_state,
-                    model,
-                    forward_and_loss_fn,
-                    datasets["val_loader"],
-                    metrics_fns,
-                    logging_fn,
-                    eval_batch_fn,
-                    validation=True,
-                    limit_batches=limit_val_batches,
-                )
-            checkpoint.save_checkpoint(
-                checkpoint_dir,
                 model,
-                train_state,
                 optimizer,
-                metrics=val_metrics,
+                forward_and_loss_fn,
+                batch,
+                print_interval,
             )
-            keep_training = False
-            break
 
-    for k, v in datasets.items():
-        if isinstance(v, rail1.data.BatchLoader):
-            v.close()
+            if scheduler is not None:
+                scheduler.step()  # pragma: no cover
 
-    return True
+            if train_state["global_step"] % print_interval == 0:
+                t1 = time.time()
+                # if self.is_distributed:
+                #     train_metrics = model.module.train_metrics.compute()
+                #     model.module.train_metrics.reset()
+                # else:
+                train_metrics = apply_metric_fns(
+                    train_state["train_metrics"], metrics_fns, is_training=True
+                )
+
+                if 'loss' not in train_metrics:
+                    train_metrics['loss'] = loss
+
+
+                s_it = (t1 - t0) / (
+                    train_state["global_step"] + 1 - train_state["last_global_step"]
+                )
+                train_metrics["s_it"] = s_it
+
+                lr = optimizer.param_groups[0]["lr"]
+                train_metrics["lr"] = lr
+
+                train_metrics["epoch"] = train_state["current_epoch"]
+                
+
+                train_metrics["grad_norm_mean"] = sum(
+                    grad_norm
+                    for grad_norm in train_state["train_metrics"]["gradient_norm"]
+                ) / len(train_state["train_metrics"]["gradient_norm"])
+                train_metrics["grad_norm_max"] = max(
+                    train_state["train_metrics"]["gradient_norm"]
+                )
+
+                train_metrics["param_norm_mean"] = sum(
+                    param_norm
+                    for param_norm in train_state["train_metrics"]["parameter_norm"]
+                ) / len(train_state["train_metrics"]["parameter_norm"])
+                train_metrics["param_norm_max"] = max(
+                    train_state["train_metrics"]["parameter_norm"]
+                )
+
+                train_metrics["total_parameters"] = train_state["total_parameters"]
+
+                td = datetime.timedelta(seconds=t1 - train_state["starting_time"])
+                loss_print = train_metrics["loss"] if "loss" in train_metrics else loss
+                print(
+                    f"{printing.format_timedelta(td, '[{d}-{h}:{m}:{s}]')} Step: {train_state['global_step']} [{1/s_it:.2f} it/s] (Training) Loss: {loss_print:.4f}"
+                )
+
+                if logging_fn is not None:
+                    train_metrics = printing.add_prefix(train_metrics, "train")
+                    logging_fn(train_metrics, step=train_state["global_step"])
+                train_state["train_metrics"].clear()
+
+                t0 = time.time()
+                train_state["last_global_step"] = train_state["global_step"]
+
+            should_validate = train_state["global_step"] % val_check_interval == 0 and (
+                train_state["global_step"] > 0 if skip_initial_eval else True
+            )
+
+            if should_validate:
+                val_metrics = None
+                test_metrics = None
+                if datasets["val_loader"] is not None and limit_val_batches > 0:
+                    if train_state["global_step"] == 0 and skip_initial_eval:
+                        print("Skipping initial evaluation.")  # pragma: no cover
+
+                    val_metrics = test_loop(
+                        train_state,
+                        model,
+                        forward_and_loss_fn,
+                        datasets["val_loader"],
+                        metrics_fns,
+                        logging_fn,
+                        eval_batch_fn,
+                        validation=True,
+                        limit_batches=limit_val_batches,
+                        print_interval=print_interval,
+                    )
+
+                t0 = time.time()
+                train_state["last_global_step"] = train_state["global_step"]
+
+                if datasets["test_loader"] is not None and limit_val_batches > 0:
+                    test_metrics = test_loop(
+                        train_state,
+                        model,
+                        forward_and_loss_fn,
+                        datasets["test_loader"],
+                        metrics_fns,
+                        logging_fn,
+                        eval_batch_fn,
+                        limit_batches=limit_val_batches,
+                        print_interval=print_interval,
+                    )
+
+                metrics = {}
+                if val_metrics is not None:
+                    metrics.update(val_metrics)
+                if test_metrics is not None:
+                    metrics.update(test_metrics)
+
+                checkpoint.save_checkpoint(
+                    checkpoint_dir,
+                    model,
+                    train_state,
+                    optimizer,
+                    metrics=metrics,
+                )
+
+            train_state["global_step"] += 1
+            train_state["batch_index"] = (
+                train_state["global_step"]
+                * train_loader.batch_size
+                // len(train_loader.dataset)
+            )
+
+            if train_state["should_raise"] is not None:
+                raise train_state["should_raise"]  # pragma: no cover
+
+            if should_stop(train_state, max_steps):
+                val_metrics = None
+                if datasets["val_loader"] is not None and limit_val_batches > 0:
+                    val_metrics = test_loop(
+                        train_state,
+                        model,
+                        forward_and_loss_fn,
+                        datasets["val_loader"],
+                        metrics_fns,
+                        logging_fn,
+                        eval_batch_fn,
+                        validation=True,
+                        limit_batches=limit_val_batches,
+                    )
+                checkpoint.save_checkpoint(
+                    checkpoint_dir,
+                    model,
+                    train_state,
+                    optimizer,
+                    metrics=val_metrics,
+                )
+                keep_training = False
+                break

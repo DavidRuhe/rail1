@@ -173,7 +173,8 @@ class Pct(nn.Module):
         self.linear3 = nn.Linear(256, output_channels)
 
     def forward(self, x):
-
+        
+        x = x.permute(0, 2, 1)
         xyz = x.permute(0, 2, 1)
         batch_size, _, _ = x.size()
         # B, D, N
@@ -224,6 +225,7 @@ class Point_Transformer_Last(nn.Module):
         # conv2d 3 -> 128 channels 1, 1
         # b * npoint, c, nsample
         # permute reshape
+
         batch_size, _, N = x.size()
 
         # B, D, N

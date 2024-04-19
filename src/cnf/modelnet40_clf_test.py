@@ -35,6 +35,20 @@ def cal_loss(pred, gold, smoothing=False):
 
     return loss
 
+
+def forward_and_loss_fn(input, model):
+    
+        points, labels = input
+    
+        preds = model.forward(points.permute(0, 2, 1))
+        loss = cal_loss(preds, labels, smoothing=False)
+        
+        return loss.mean(0), {
+            "loss": loss,
+            "logits": preds,
+            "targets": labels.squeeze(),
+        }
+
 class IOStream():
     def __init__(self, path):
         self.f = open(path, 'a')
@@ -49,26 +63,10 @@ class IOStream():
 
 
 def train(args, io):
-    # train_loader = DataLoader(ModelNet40(partition='train', num_points=args.num_points), num_workers=8,
-    #                         batch_size=args.batch_size, shuffle=True, drop_last=True)
+    train_loader = DataLoader(ModelNet40(partition='train', num_points=args.num_points), num_workers=8,
+                            batch_size=args.batch_size, shuffle=True, drop_last=True)
     test_loader = DataLoader(ModelNet40(partition='test', num_points=args.num_points), num_workers=8,
                             batch_size=args.test_batch_size, shuffle=True, drop_last=False)
-
-    train_loader = rail1.data.batchloader.BatchLoader(
-        ModelNet40(args.num_points, partition="train"),
-        batch_size=args.batch_size,
-        shuffle=True,
-        num_workers=8,
-        n_prefetch=2,
-    )
-
-    test_loader = rail1.data.batchloader.BatchLoader(
-        ModelNet40(args.num_points, partition="test"),
-        batch_size=args.test_batch_size,
-        shuffle=False,
-        num_workers=4,
-        n_prefetch=2,
-    )
 
     device = torch.device("cuda" if args.cuda else "cpu")
 
@@ -83,96 +81,101 @@ def train(args, io):
         print("Use Adam")
         opt = optim.Adam(model.parameters(), lr=args.lr, weight_decay=1e-4)
 
-    scheduler = CosineAnnealingLR(opt, args.epochs, eta_min=args.lr)
+    scheduler = CosineAnnealingLR(opt, args.epochs * len(train_loader), eta_min=args.lr)
     
     criterion = cal_loss
     best_test_acc = 0
 
-    for epoch in range(args.epochs):
-        scheduler.step()
-        train_loss = 0.0
-        count = 0.0
-        model.train()
-        train_pred = []
-        train_true = []
-        idx = 0
-        total_time = 0.0
-        # num_batches = len(train_loader.dataset) // args.batch_size
-        num_batches = -(len(train_loader.dataset) // -args.batch_size)
-        for i in range(num_batches):
-            data, label = train_loader[epoch * num_batches + i]
+    datasets = {
+        'train_loader': train_loader,
+        'test_loader': test_loader,
+        'val_loader': None,
+    }
 
-        # for data, label in (train_loader):
-            data, label = data.to(device), label.to(device).squeeze() 
-            data = data.permute(0, 2, 1)
-            batch_size = data.size()[0]
-            opt.zero_grad()
+    metric_fns = [rail1.metrics.accuracy]
 
-            start_time = time.time()
-            logits = model(data)
-            loss = criterion(logits, label)
-            loss.backward()
-            opt.step()
-            end_time = time.time()
-            total_time += (end_time - start_time)
+    rail1.fit('./', model=model, optimizer=opt, datasets=datasets, forward_and_loss_fn=forward_and_loss_fn, scheduler=scheduler, max_steps=131072, metrics_fns=metric_fns)
+
+    # for epoch in range(args.epochs):
+    #     scheduler.step()
+    #     train_loss = 0.0
+    #     count = 0.0
+    #     model.train()
+    #     train_pred = []
+    #     train_true = []
+    #     idx = 0
+    #     total_time = 0.0
+
+    #     for data, label in (train_loader):
+    #         data, label = data.to(device), label.to(device).squeeze() 
+    #         data = data.permute(0, 2, 1)
+    #         batch_size = data.size()[0]
+    #         opt.zero_grad()
+
+    #         start_time = time.time()
+    #         logits = model(data)
+    #         loss = criterion(logits, label)
+    #         loss.backward()
+    #         opt.step()
+    #         end_time = time.time()
+    #         total_time += (end_time - start_time)
             
-            preds = logits.max(dim=1)[1]
-            count += batch_size
-            train_loss += loss.item() * batch_size
-            train_true.append(label.cpu().numpy())
-            train_pred.append(preds.detach().cpu().numpy())
-            idx += 1
+    #         preds = logits.max(dim=1)[1]
+    #         count += batch_size
+    #         train_loss += loss.item() * batch_size
+    #         train_true.append(label.cpu().numpy())
+    #         train_pred.append(preds.detach().cpu().numpy())
+    #         idx += 1
             
-        print ('train total time is',total_time)
-        train_true = np.concatenate(train_true)
-        train_pred = np.concatenate(train_pred)
-        outstr = 'Train %d, loss: %.6f, train acc: %.6f, train avg acc: %.6f' % (epoch,
-                                                                                train_loss*1.0/count,
-                                                                                metrics.accuracy_score(
-                                                                                train_true, train_pred),
-                                                                                metrics.balanced_accuracy_score(
-                                                                                train_true, train_pred))
-        io.cprint(outstr)
+    #     print ('train total time is',total_time)
+    #     train_true = np.concatenate(train_true)
+    #     train_pred = np.concatenate(train_pred)
+    #     outstr = 'Train %d, loss: %.6f, train acc: %.6f, train avg acc: %.6f' % (epoch,
+    #                                                                             train_loss*1.0/count,
+    #                                                                             metrics.accuracy_score(
+    #                                                                             train_true, train_pred),
+    #                                                                             metrics.balanced_accuracy_score(
+    #                                                                             train_true, train_pred))
+    #     io.cprint(outstr)
 
-        ####################
-        # Test
-        ####################
-        test_loss = 0.0
-        count = 0.0
-        model.eval()
-        test_pred = []
-        test_true = []
-        total_time = 0.0
-        # num_batches = -(len(test_loader.dataset) // -args.test_batch_size)
-        # for data, label in test_loader:
-        for i in range(len(test_loader)):
-            data, label = test_loader[i]
-            data, label = data.to(device), label.to(device).squeeze()
-            data = data.permute(0, 2, 1)
-            batch_size = data.size()[0]
-            start_time = time.time()
-            logits = model(data)
-            end_time = time.time()
-            total_time += (end_time - start_time)
-            loss = criterion(logits, label)
-            preds = logits.max(dim=1)[1]
-            count += batch_size
-            test_loss += loss.item() * batch_size
-            test_true.append(label.cpu().numpy())
-            test_pred.append(preds.detach().cpu().numpy())
-        print ('test total time is', total_time)
-        test_true = np.concatenate(test_true)
-        test_pred = np.concatenate(test_pred)
-        test_acc = metrics.accuracy_score(test_true, test_pred)
-        avg_per_class_acc = metrics.balanced_accuracy_score(test_true, test_pred)
-        outstr = 'Test %d, loss: %.6f, test acc: %.6f, test avg acc: %.6f' % (epoch,
-                                                                            test_loss*1.0/count,
-                                                                            test_acc,
-                                                                            avg_per_class_acc)
-        io.cprint(outstr)
-        if test_acc >= best_test_acc:
-            best_test_acc = test_acc
-            # torch.save(model.state_dict(), 'checkpoints/%s/models/model.t7' % args.exp_name)
+    #     ####################
+    #     # Test
+    #     ####################
+    #     test_loss = 0.0
+    #     count = 0.0
+    #     model.eval()
+    #     test_pred = []
+    #     test_true = []
+    #     total_time = 0.0
+    #     # num_batches = -(len(test_loader.dataset) // -args.test_batch_size)
+    #     for data, label in test_loader:
+    #         data, label = test_loader[i]
+    #         data, label = data.to(device), label.to(device).squeeze()
+    #         data = data.permute(0, 2, 1)
+    #         batch_size = data.size()[0]
+    #         start_time = time.time()
+    #         logits = model(data)
+    #         end_time = time.time()
+    #         total_time += (end_time - start_time)
+    #         loss = criterion(logits, label)
+    #         preds = logits.max(dim=1)[1]
+    #         count += batch_size
+    #         test_loss += loss.item() * batch_size
+    #         test_true.append(label.cpu().numpy())
+    #         test_pred.append(preds.detach().cpu().numpy())
+    #     print ('test total time is', total_time)
+    #     test_true = np.concatenate(test_true)
+    #     test_pred = np.concatenate(test_pred)
+    #     test_acc = metrics.accuracy_score(test_true, test_pred)
+    #     avg_per_class_acc = metrics.balanced_accuracy_score(test_true, test_pred)
+    #     outstr = 'Test %d, loss: %.6f, test acc: %.6f, test avg acc: %.6f' % (epoch,
+    #                                                                         test_loss*1.0/count,
+    #                                                                         test_acc,
+    #                                                                         avg_per_class_acc)
+    #     io.cprint(outstr)
+    #     if test_acc >= best_test_acc:
+    #         best_test_acc = test_acc
+    #         # torch.save(model.state_dict(), 'checkpoints/%s/models/model.t7' % args.exp_name)
 
 
 
@@ -224,5 +227,3 @@ if __name__ == "__main__":
 
     if not args.eval:
         train(args, io)
-    else:
-        test(args, io)

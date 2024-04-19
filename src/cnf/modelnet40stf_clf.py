@@ -21,8 +21,6 @@ def forward_and_loss_fn(input, model):
     preds = model.forward(points, indices)
     loss = F.cross_entropy(preds, labels, reduction="none")
     
-    breakpoint()
-
     return loss.mean(0), {
         "loss": loss,
         "logits": preds,

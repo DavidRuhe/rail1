@@ -5,7 +5,6 @@ import os
 import numpy as np
 import torch.utils.data as data
 import tqdm
-from rail1.data import batchloader
 import functools
 from sklearn import cluster
 import fpsample
@@ -205,20 +204,36 @@ def load_modelnet40stf_points(
         transforms=test_transforms,
     )
 
-    train_loader = batchloader.BatchLoader(
+    # train_loader = batchloader.BatchLoader(
+    #     train,
+    #     batch_size=batch_size,
+    #     num_workers=num_workers,
+    #     n_prefetch=n_prefetch,
+    #     shuffle=True,
+    # )
+
+    # test_loader = batchloader.BatchLoader(
+    #     test,
+    #     batch_size=batch_size,
+    #     num_workers=num_workers,
+    #     n_prefetch=n_prefetch,
+    #     shuffle=False,
+    # )
+
+    train_loader = data.DataLoader(
         train,
         batch_size=batch_size,
         num_workers=num_workers,
-        n_prefetch=n_prefetch,
         shuffle=True,
+        drop_last=True,
     )
 
-    test_loader = batchloader.BatchLoader(
+    test_loader = data.DataLoader(
         test,
         batch_size=batch_size,
         num_workers=num_workers,
-        n_prefetch=n_prefetch,
         shuffle=False,
+        drop_last=False,
     )
 
     idx_to_label = {v: k for k, v in LABEL_TO_IDX.items()}
