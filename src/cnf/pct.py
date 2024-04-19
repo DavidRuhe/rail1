@@ -1,78 +1,40 @@
 from __future__ import print_function
 import os
 import argparse
-import rail1.data
 import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.optim.lr_scheduler import CosineAnnealingLR
-from datasets.modelnet40_ply import ModelNet40
-from models.menghao_trafo_new import Pct
+from .datasets.modelnet40_ply import ModelNet40
+from model import Pct
 import numpy as np
 from torch.utils.data import DataLoader
+from util import cal_loss, IOStream
 import sklearn.metrics as metrics
-import torch.nn.functional as F
-import rail1
 
 import time 
 
-def cal_loss(pred, gold, smoothing=False):
-    ''' Calculate cross entropy loss, apply label smoothing if needed. '''
-
-    gold = gold.contiguous().view(-1)
-
-    if smoothing:
-        eps = 0.2
-        n_class = pred.size(1)
-
-        one_hot = torch.zeros_like(pred).scatter(1, gold.view(-1, 1), 1)
-        one_hot = one_hot * (1 - eps) + (1 - one_hot) * eps / (n_class - 1)
-        log_prb = F.log_softmax(pred, dim=1)
-
-        loss = -(one_hot * log_prb).sum(dim=1).mean()
-    else:
-        loss = F.cross_entropy(pred, gold, reduction='mean')
-
-    return loss
-
-class IOStream():
-    def __init__(self, path):
-        self.f = open(path, 'a')
-
-    def cprint(self, text):
-        print(text)
-        self.f.write(text+'\n')
-        self.f.flush()
-
-    def close(self):
-        self.f.close()
-
+def _init_():
+    if not os.path.exists('checkpoints'):
+        os.makedirs('checkpoints')
+    if not os.path.exists('checkpoints/'+args.exp_name):
+        os.makedirs('checkpoints/'+args.exp_name)
+    if not os.path.exists('checkpoints/'+args.exp_name+'/'+'models'):
+        os.makedirs('checkpoints/'+args.exp_name+'/'+'models')
+    os.system('cp main.py checkpoints'+'/'+args.exp_name+'/'+'main.py.backup')
+    os.system('cp model.py checkpoints' + '/' + args.exp_name + '/' + 'model.py.backup')
+    os.system('cp util.py checkpoints' + '/' + args.exp_name + '/' + 'util.py.backup')
+    os.system('cp data.py checkpoints' + '/' + args.exp_name + '/' + 'data.py.backup')
 
 def train(args, io):
-    # train_loader = DataLoader(ModelNet40(partition='train', num_points=args.num_points), num_workers=8,
-    #                         batch_size=args.batch_size, shuffle=True, drop_last=True)
+    train_loader = DataLoader(ModelNet40(partition='train', num_points=args.num_points), num_workers=8,
+                            batch_size=args.batch_size, shuffle=True, drop_last=True)
     test_loader = DataLoader(ModelNet40(partition='test', num_points=args.num_points), num_workers=8,
                             batch_size=args.test_batch_size, shuffle=True, drop_last=False)
 
-    train_loader = rail1.data.batchloader.BatchLoader(
-        ModelNet40(args.num_points, partition="train"),
-        batch_size=args.batch_size,
-        shuffle=True,
-        num_workers=8,
-        n_prefetch=2,
-    )
-
-    test_loader = rail1.data.batchloader.BatchLoader(
-        ModelNet40(args.num_points, partition="test"),
-        batch_size=args.test_batch_size,
-        shuffle=False,
-        num_workers=4,
-        n_prefetch=2,
-    )
-
     device = torch.device("cuda" if args.cuda else "cpu")
 
-    model = Pct().to(device)
+    model = Pct(args).to(device)
     print(str(model))
     model = nn.DataParallel(model)
 
@@ -97,12 +59,7 @@ def train(args, io):
         train_true = []
         idx = 0
         total_time = 0.0
-        # num_batches = len(train_loader.dataset) // args.batch_size
-        num_batches = -(len(train_loader.dataset) // -args.batch_size)
-        for i in range(num_batches):
-            data, label = train_loader[epoch * num_batches + i]
-
-        # for data, label in (train_loader):
+        for data, label in (train_loader):
             data, label = data.to(device), label.to(device).squeeze() 
             data = data.permute(0, 2, 1)
             batch_size = data.size()[0]
@@ -143,10 +100,7 @@ def train(args, io):
         test_pred = []
         test_true = []
         total_time = 0.0
-        # num_batches = -(len(test_loader.dataset) // -args.test_batch_size)
-        # for data, label in test_loader:
-        for i in range(len(test_loader)):
-            data, label = test_loader[i]
+        for data, label in test_loader:
             data, label = data.to(device), label.to(device).squeeze()
             data = data.permute(0, 2, 1)
             batch_size = data.size()[0]
@@ -172,9 +126,41 @@ def train(args, io):
         io.cprint(outstr)
         if test_acc >= best_test_acc:
             best_test_acc = test_acc
-            # torch.save(model.state_dict(), 'checkpoints/%s/models/model.t7' % args.exp_name)
+            torch.save(model.state_dict(), 'checkpoints/%s/models/model.t7' % args.exp_name)
 
 
+def test(args, io):
+    test_loader = DataLoader(ModelNet40(partition='test', num_points=args.num_points),
+                            batch_size=args.test_batch_size, shuffle=True, drop_last=False)
+
+    device = torch.device("cuda" if args.cuda else "cpu")
+
+    model = Pct(args).to(device)
+    model = nn.DataParallel(model) 
+    
+    model.load_state_dict(torch.load(args.model_path))
+    model = model.eval()
+    test_true = []
+    test_pred = []
+
+    for data, label in test_loader:
+        data, label = data.to(device), label.to(device).squeeze()
+        data = data.permute(0, 2, 1)
+        logits = model(data)
+        preds = logits.max(dim=1)[1] 
+        if args.test_batch_size == 1:
+            test_true.append([label.cpu().numpy()])
+            test_pred.append([preds.detach().cpu().numpy()])
+        else:
+            test_true.append(label.cpu().numpy())
+            test_pred.append(preds.detach().cpu().numpy())
+
+    test_true = np.concatenate(test_true)
+    test_pred = np.concatenate(test_pred)
+    test_acc = metrics.accuracy_score(test_true, test_pred)
+    avg_per_class_acc = metrics.balanced_accuracy_score(test_true, test_pred)
+    outstr = 'Test :: test acc: %.6f, test avg acc: %.6f'%(test_acc, avg_per_class_acc)
+    io.cprint(outstr)
 
 if __name__ == "__main__":
     # Training settings
@@ -208,8 +194,9 @@ if __name__ == "__main__":
     parser.add_argument('--model_path', type=str, default='', metavar='N',
                         help='Pretrained model path')
     args = parser.parse_args()
-    
-    os.makedirs('checkpoints/%s' % args.exp_name, exist_ok=True)
+
+    _init_()
+
     io = IOStream('checkpoints/' + args.exp_name + '/run.log')
     io.cprint(str(args))
 

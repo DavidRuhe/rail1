@@ -174,8 +174,6 @@ class Pct(nn.Module):
 
     def forward(self, x):
 
-        x = x.permute(0, 2, 1)
-
         xyz = x.permute(0, 2, 1)
         batch_size, _, _ = x.size()
         # B, D, N
