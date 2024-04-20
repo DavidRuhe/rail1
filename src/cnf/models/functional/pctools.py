@@ -151,7 +151,7 @@ def group_to_idx(pos_features, idx, query_fn, normalize_fn):
         grouped_pos, new_pos, grouped_features, features
     )
 
-    return grouped_pos_norm, pos, grouped_features_norm, features
+    return grouped_pos_norm, pos, grouped_features_norm, features, group_idx
 
 
 if __name__ == "__main__":

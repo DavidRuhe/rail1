@@ -12,19 +12,19 @@ from .transposenet import TransposeNet
 from .pointnet import PointNet
 from .pointmlp import pointMLP
 from .pointmlp_clean import construct_pointmlp
-from .menghao_trafo import PointTransformerCls
+from .menghao_trafo import PointCloudTransformer
 from .menghao_trafo_clean import PointTransformerClsClean
 from .hengshuang_trafo import PointTransformerCls as HSPointTransformerCls
-from .menghao_trafo_new import Pct
+from .hengshuang_trafo_new import PointTransformerCls as HSPointTransformerClsNew
 
-def trafo_menghao_new():
-    return Pct()
+def trafo_hengshuang_new():
+    return HSPointTransformerClsNew()
 
 def trafo_hengshuang():
     return HSPointTransformerCls()
 
 def trafo_menghao():
-    return PointTransformerCls()
+    return PointCloudTransformer()
 
 def trafo_menghao_clean():
     return PointTransformerClsClean()

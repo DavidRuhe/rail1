@@ -15,8 +15,8 @@ import models
 
 def forward_and_loss_fn(input, model):
 
-    points, labels = input
-    preds = model.forward(points)
+    points_idx, labels = input
+    preds = model.forward(*points_idx)
     labels = labels.squeeze(-1)
 
     loss = F.cross_entropy(preds, labels, reduction="none")

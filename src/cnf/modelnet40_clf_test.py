@@ -7,7 +7,7 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.optim.lr_scheduler import CosineAnnealingLR
 from datasets.modelnet40_ply import ModelNet40
-from models.menghao_trafo_new import Pct
+from models.menghao_trafo_new import PointCloudTransformer
 import numpy as np
 from torch.utils.data import DataLoader
 import sklearn.metrics as metrics
@@ -70,7 +70,7 @@ def train(args, io):
 
     device = torch.device("cuda" if args.cuda else "cpu")
 
-    model = Pct().to(device)
+    model = PointCloudTransformer().to(device)
     print(str(model))
     model = nn.DataParallel(model)
 

@@ -1,9 +1,11 @@
 import torch
 import torch.nn as nn
+
 # from .pointmlp import knn, index
 import torch.nn.functional as F
 
 # def group()
+
 
 def sample_and_group(nsample, xyz, points, idx):
     new_xyz = index(xyz, idx)
@@ -66,6 +68,7 @@ def sample_and_group(nsample, xyz, points, idx):
 #         new_points = grouped_xyz
 #     return new_xyz, new_points
 
+
 class PointNetSetAbstraction(nn.Module):
     def __init__(self, npoint, radius, nsample, in_channel, mlp, group_all, knn=False):
         super(PointNetSetAbstraction, self).__init__()
@@ -94,7 +97,9 @@ class PointNetSetAbstraction(nn.Module):
         if self.group_all:
             new_xyz, new_points = sample_and_group_all(xyz, points)
         else:
-            new_xyz, new_points = sample_and_group(self.npoint, self.nsample, xyz, points, idx)
+            new_xyz, new_points = sample_and_group(
+                self.npoint, self.nsample, xyz, points, idx
+            )
         new_xyz = index(xyz, idx)
         # new_xyz: sampled points position data, [B, npoint, C]
         # new_points: sampled points data, [B, npoint, nsample, C+D]
@@ -186,7 +191,7 @@ class Backbone(nn.Module):
 
         xyz_and_feats = [(xyz, points)]
         for i in range(self.nblocks):
-            
+
             xyz, points = self.transition_downs[i](xyz, points, idx[i + 1])
             points = self.transformers[i](xyz, points)[0]
             xyz_and_feats.append((xyz, points))

@@ -4,7 +4,15 @@ from ..modules.utils import Residual
 from .utils import get_activation
 
 
-def convnd_mlp(mlp_spec, convnd, bn=None, residual=False, activation="relu"):
+def convnd_mlp(
+    mlp_spec,
+    convnd,
+    bn=None,
+    residual=False,
+    activation="relu",
+    dropout=0.0,
+    act_last=True,
+):
     """
     Creates a nD convolutional MLP.
 
@@ -20,15 +28,28 @@ def convnd_mlp(mlp_spec, convnd, bn=None, residual=False, activation="relu"):
         bn (bool): whether to use batch normalization
         residual (bool): whether to use residual connections
         activation (str): the activation function to use
+        dropout (float): the dropout probability
+        act_last (bool): whether to apply activation function
+            to the last layer
 
     Returns:
         nn.Sequential: the network
     """
     layers = []
-    for i in range(1, len(mlp_spec)):
+    for i in range(1, len(mlp_spec) - 1):
         layers.append(convnd(mlp_spec[i - 1], mlp_spec[i], kernel_size=1, bias=not bn))
         if bn is not None:
             layers.append(bn(mlp_spec[i]))
+        layers.append(get_activation(activation))
+        if dropout > 0.0:
+            layers.append(nn.Dropout(dropout))
+
+    layers.append(
+        convnd(mlp_spec[-2], mlp_spec[-1], kernel_size=1, bias=not (act_last and bn))
+    )
+    if act_last:
+        if bn:
+            layers.append(bn(mlp_spec[-1]))
         layers.append(get_activation(activation))
 
     seq = nn.Sequential(*layers)

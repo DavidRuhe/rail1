@@ -12,13 +12,13 @@ class PointConv(nn.Module):
         k,
         mlp: nn.Module,
         normalizer=pctools.recenter_groups,
-        use_xyz=False,
+        cat_pos=False,
         cat_features=False,
     ):
         super().__init__()
         self.k = k
         self.mlp = mlp
-        self.use_xyz = use_xyz
+        self.cat_pos = cat_pos
         self.cat_features = cat_features
         self.normalizer = normalizer
         self.grouper = partial(
@@ -30,8 +30,10 @@ class PointConv(nn.Module):
         self.aggr = lambda tensor: torch.max(tensor, -2).values
 
     def forward(self, pos_features, idx):
-        grouped_pos, pos, grouped_features, features = self.grouper(pos_features, idx)
-        if self.use_xyz:
+        grouped_pos, pos, grouped_features, features, neighbor_idx = self.grouper(
+            pos_features, idx
+        )
+        if self.cat_pos:
             grouped_features = torch.cat([grouped_pos, grouped_features], dim=-1)
 
         if self.cat_features:
@@ -49,10 +51,10 @@ class PointConv(nn.Module):
 
 
 class PointNet(nn.Module):
-    def __init__(self, use_xyz=True, kmeans=False):
+    def __init__(self, cat_pos=True, kmeans=False):
         super().__init__()
 
-        self.use_xyz = use_xyz
+        self.cat_pos = cat_pos
         self.kmeans = kmeans
 
         self._build_model()
@@ -62,15 +64,17 @@ class PointNet(nn.Module):
         self.convnet.append(
             PointConv(
                 k=64,
-                mlp=conv_mlp.conv2d_mlp([3 + 3 * self.use_xyz, 64, 64, 128], bn=True),
-                use_xyz=True
+                mlp=conv_mlp.conv2d_mlp([3 + 3 * self.cat_pos, 64, 64, 128], bn=True),
+                cat_pos=True,
             )
         )
         self.convnet.append(
             PointConv(
-                mlp=conv_mlp.conv2d_mlp([128 + 3 * self.use_xyz, 128, 128, 256], bn=True),
+                mlp=conv_mlp.conv2d_mlp(
+                    [128 + 3 * self.cat_pos, 128, 128, 256], bn=True
+                ),
                 k=64,
-                use_xyz=True
+                cat_pos=True,
             )
         )
 

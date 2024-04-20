@@ -3,7 +3,6 @@ import os
 
 import h5py
 import numpy as np
-from rail1.data import batchloader
 from torch.utils.data import Dataset
 
 from .modelnet40_stf import LABEL_TO_IDX
@@ -60,13 +59,13 @@ def jitter_pointcloud(pointcloud, sigma=0.01, clip=0.02):
 
 
 class ModelNet40(Dataset):
-    def __init__(self, num_points, partition="train"):
+    def __init__(self, stages=[1024, 512, 256, 128], partition="train"):
         self.data, self.label = load_data(partition)
-        self.num_points = num_points
         self.partition = partition
+        self.stages = stages
 
     def __getitem__(self, item):
-        pointcloud = self.data[item][: self.num_points]
+        pointcloud = self.data[item]
         label = self.label[item]
         if self.partition == "train":
             pointcloud = random_point_dropout(
@@ -74,7 +73,18 @@ class ModelNet40(Dataset):
             )  # open for dgcnn not for our idea  for all
             pointcloud = translate_pointcloud(pointcloud)
             np.random.shuffle(pointcloud)
-        return pointcloud, label
+
+        idx = []
+        for i, stage in enumerate(self.stages):
+            if i == 0:
+                high = pointcloud.shape[0]
+            else:
+                high = self.stages[i - 1]
+            stage_idx = np.random.randint(0, high, (stage,))
+            idx.append(stage_idx)
+
+
+        return (pointcloud, idx), label
 
     def __len__(self):
         return self.data.shape[0]
@@ -82,8 +92,8 @@ class ModelNet40(Dataset):
 
 def load_modelnet40_ply(*, batch_size=32, num_workers=4, n_prefetch=2):
 
-    train = ModelNet40(1024, partition="train")
-    test = ModelNet40(1024, partition="test")
+    train = ModelNet40(partition="train")
+    test = ModelNet40(partition="test")
 
     from torch.utils.data import DataLoader
 
