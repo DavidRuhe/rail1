@@ -136,13 +136,13 @@ def process_args_and_load_config(argv, devrun=False):  # pragma: no cover
             cont = input("Continue? [y/N]")
             if cont.lower() != "y":
                 raise RuntimeError("Aborting.")
-        
+
     config_path = argv[1]
     config = load_module.load_attribute_from_python_file(config_path, "config")
 
     if not devrun:
         for kwarg in argv[2:]:
-            config['command'].append(kwarg)
+            config["command"].append(kwarg)
 
     name = config["name"]
     project = config["project"]
@@ -185,7 +185,7 @@ def main():  # pragma: no cover
     )
     on_cluster = "cluster" in config
 
-    command = "WANDB_ENABLED=TRUE wandb agent {entity}/{project}/{sweep_id}"
+    command = "WANDB_ENABLED=TRUE wandb agent --count 1 {entity}/{project}/{sweep_id}"
 
     if on_cluster:  # pragma: no cover
         cluster_config = config["cluster"]
