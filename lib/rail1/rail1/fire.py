@@ -175,6 +175,15 @@ def fire(function):
     assert isinstance(seed, int), type(seed)
     seed = utils.set_seed(seed, deterministic=deterministic)
 
+    dtype = config["dtype"]
+    print("\nUsing dtype", dtype)
+    if dtype == "float64":
+        torch.set_default_dtype(torch.float64)
+    elif dtype == "float32":
+        torch.set_default_dtype(torch.float32)
+    else:
+        raise ValueError(f"Unknown dtype {dtype}.")
+
     # Distributed
     dist_cfg = None
     if USE_DISTRIBUTED:
