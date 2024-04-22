@@ -21,7 +21,7 @@ config = {
         radius_rng=(0.2, 1.0),
     ),
     # "model": dict(name="pointnetpp_clean"),
-    "model": dict(name="s2vs_ae_d128_m512"),
+    "model": dict(name="ae_d128_m128"),
     "optimizer": {"name": "adam", "lr": 1e-3},
     # "scheduler": dict(
     #     name="CosineAnnealingLR",

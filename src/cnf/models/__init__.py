@@ -18,7 +18,7 @@ from .hengshuang_trafo import PointTransformerCls as HSPointTransformerCls
 from .hengshuang_trafo_new import PointTransformerCls as HSPointTransformerClsNew
 from .random_spheres_cnf import RandomSpheresCNF
 from .siren import SirenCNF, SCNF
-from .s2vs import ae_d128_m512, ae_d512_m512
+from .s2vs import ae_d128_m512, ae_d512_m512, ae_d512_m128, ae_d128_m128
 
 def s2vs_ae_d128_m512():
     return ae_d128_m512()
