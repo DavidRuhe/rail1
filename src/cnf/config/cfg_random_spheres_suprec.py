@@ -15,13 +15,19 @@ config = {
     "seed": 0,
     "continue": None,
     "dataset": dict(
-        name="random_spheres", n_points=1024, batch_size=32, radius_rng=(.2, 1.0)
+        name="random_spheres", n_points=1024, batch_size=32, radius_rng=(0.2, 1.0)
     ),
     # "model": dict(name="pointnetpp_clean"),
     "model": dict(
-        name="cnf", 
-        input_dim=3, 
+        # name="siren_cnf", 
+        name="cnf",
+        input_dim=3,
+        # dim_hidden=256,
+        # dim_out=1,
+        # num_layers=5,
+        # w0_initial=30, 
         output_dim=1, 
+        # modulator_dims=(1, 256, 256, 256, 265, 256)
         input_conditioning_dim=1
     ),
     "optimizer": {"name": "adam", "lr": 1e-3},

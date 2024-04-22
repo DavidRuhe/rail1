@@ -18,9 +18,10 @@ config = {
         name="random_spheres",
         n_points=1024,
         batch_size=32,
+        radius_rng=(0.2, 1.0),
     ),
     # "model": dict(name="pointnetpp_clean"),
-    "model": dict(name="pointnet_cnf"),
+    "model": dict(name="s2vs_ae_d128_m512"),
     "optimizer": {"name": "adam", "lr": 1e-3},
     # "scheduler": dict(
     #     name="CosineAnnealingLR",

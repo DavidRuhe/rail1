@@ -13,7 +13,6 @@ class RandomSpheresCNF(nn.Module):
         self.cnf = ConditionalNeuralField(
             input_dim=3,
             output_dim=1,
-            hidden_dims=(512, 256, 128),
             input_conditioning_dim=40,
         )
 

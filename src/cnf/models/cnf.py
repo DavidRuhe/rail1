@@ -2,6 +2,27 @@ import torch
 from torch import nn
 
 
+class Bilinear(nn.Module):
+    def __init__(self, input_dim, output_dim):
+        super().__init__()
+        self.input_dim = input_dim
+        self.output_dim = output_dim
+        # self.linear_1 = nn.Linear(input_dim, output_dim)
+        self.linear_1 = nn.Linear(input_dim, output_dim)
+        # self.linear_1 = ZeroLinear(input_dim, output_dim)
+        self.linear_2 = nn.Linear(input_dim, output_dim)
+        # self.a = nn.Parameter(torch.zeros(output_dim))
+
+    def forward(self, x1, x2=None):
+        if x2 is None:
+            x2 = x1
+        h = self.linear_1(x2)
+        # b = h / (torch.sigmoid(self.a[None]) * (h.abs() - 1) + 1)
+        # return self.linear_2(x) * b
+        return torch.sigmoid(h) * self.linear_2(x1)
+
+
+
 class ZeroLinear(nn.Module):
     def __init__(self, in_features, out_features):
         super(ZeroLinear, self).__init__()
@@ -26,22 +47,29 @@ class FiLMLinear(nn.Module):
         self.c_features = c_features
 
         if c_features is not None:
-            self.gamma = ZeroLinear(c_features, in_features)
-            self.beta = ZeroLinear(c_features, in_features)
+        #     self.gamma = ZeroLinear(c_features, in_features)
+        #     self.beta = ZeroLinear(c_features, in_features)
             self.forward = self.forward_conditional  # type: ignore
 
+        # self.linear = Bilinear(in_features, out_features)
         self.linear = nn.Linear(in_features, out_features)
-        self.custom_factor = custom_factor
-        self.cond_linear = nn.Linear(c_features, in_features)
+        # self.custom_factor = custom_factor
+        # self.cond_linear = nn.Linear(c_features, in_features)
+        self.cond_linear = nn.Linear(c_features, out_features)
+        # self.cond_linear = ZeroLinear(c_features, out_features)
+        # self.linear = 
 
     def forward_conditional(self, x, c):
         # x: [B, N, C]
         # c: [B, C]
-        res = x
-        # a = self.custom_factor * (self.gamma(c[:, None]))
-        # b = self.custom_factor * self.beta(c[:, None])
-        x = torch.sigmoid(self.cond_linear(c))
-        return self.linear(x[:, None] * res)
+        # res = x
+        # # a = self.custom_factor * (self.gamma(c[:, None]))
+        # # b = self.custom_factor * self.beta(c[:, None])
+        # x = torch.sigmoid(self.cond_linear(c))
+        # return self.linear(x[:, None] * res)
+        h = self.cond_linear(c)
+        return torch.sigmoid(h[:, None]) * self.linear(x)
+        # return self.linear(x, c)
 
     def forward(self, x):
         return self.linear(x)
@@ -56,9 +84,9 @@ class ConditionalNeuralField(nn.Module):
         self,
         input_dim,
         output_dim,
-        hidden_dims=(256, 128, 64),
+        hidden_dims=(512, 512, 512, 512, 512),
         input_conditioning_dim=None,
-        conditioning_hidden_dim=256,
+        conditioning_hidden_dim=512,
         activation=nn.ReLU(),
     ):
         super().__init__()
@@ -74,23 +102,35 @@ class ConditionalNeuralField(nn.Module):
                 nn.Linear(input_conditioning_dim, conditioning_hidden_dim),
                 activation,
                 nn.Linear(conditioning_hidden_dim, conditioning_hidden_dim),
+                activation,
             )
         else:
             conditioning_hidden_dim = None
 
-        self.input_layer = nn.Linear(input_dim, hidden_dims[0])
+        self.input_layer = nn.Linear(input_dim + conditioning_hidden_dim, hidden_dims[0])
         self.network = nn.ModuleList()
         for i in range(len(hidden_dims) - 1):
             self.network.append(
                 FiLMLinear(hidden_dims[i], hidden_dims[i + 1], conditioning_hidden_dim)
             )
+        # self.output_layer = Bilinear(hidden_dims[-1], output_dim)
         self.output_layer = nn.Linear(hidden_dims[-1], output_dim)
+
+        self.modulator = nn.ModuleList()
+        for i in range(len(hidden_dims) - 1):
+            self.modulator.append(
+                nn.Linear(2 * conditioning_hidden_dim, conditioning_hidden_dim)
+            )
+
 
     def forward_conditional(self, x, c):
         c = self.c_emb(c)
-        x = self.activation(self.input_layer(x))
-        for layer in self.network:
+        c0 = c
+        input = torch.cat([c[:, None].expand(-1, x.size(1), -1), x], dim=-1)
+        x = self.activation(self.input_layer(input))
+        for i, layer in enumerate(self.network):
             x = self.activation(layer(x, c))
+            c = self.activation(self.modulator[i](torch.cat([c0, c], dim=-1)))
         x = self.output_layer(x)
         return x
 
