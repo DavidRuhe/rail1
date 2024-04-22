@@ -16,6 +16,13 @@ from .menghao_trafo import PointCloudTransformer
 from .menghao_trafo_clean import PointTransformerClsClean
 from .hengshuang_trafo import PointTransformerCls as HSPointTransformerCls
 from .hengshuang_trafo_new import PointTransformerCls as HSPointTransformerClsNew
+from .random_spheres_cnf import RandomSpheresCNF
+
+def cnf(*args, **kwargs):
+    return ConditionalNeuralField(*args, **kwargs)
+
+def pointnet_cnf():
+    return RandomSpheresCNF(backbone="pointnet")
 
 def trafo_hengshuang_new():
     return HSPointTransformerClsNew()
@@ -48,8 +55,8 @@ def pointnetpp():
 def pointnetpp_kmeans():
     return PointNetPPClassification(kmeans=True)
 
-def pointnet():
-    return PointNet()
+def pointnet(*args, **kwargs):
+    return PointNet(*args, **kwargs)
 
 def vn_dgcnn():
     return VNDGCNN()

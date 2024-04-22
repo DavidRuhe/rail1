@@ -11,6 +11,12 @@ from .modelnet40_points import load_modelnet40_points
 from .modelnet40_stf import load_modelnet40stf_points
 from .modelnet40_kmeans import load_modelnet40stf_points_kmeans
 from .modelnet40_ply import load_modelnet40_ply
+from .random_spheres import load_random_spheres_dataset
+
+def random_spheres(*args, **kwargs):
+    return load_random_spheres_dataset(
+        *args, **kwargs
+    )
 
 def modelnet40_ply(**kwargs):
     return load_modelnet40_ply(**kwargs)

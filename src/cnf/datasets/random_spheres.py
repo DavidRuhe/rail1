@@ -1,64 +1,53 @@
-import torch
-import torch.utils.data
-import os
-from torchvision import datasets, transforms
-import sys
-
-from rail1.data import batchloader
-from rail1.data import collate
-
-DATAROOT = os.environ["DATAROOT"]
+import numpy as np
+from torch.utils import data
 
 
-# class RandomPoints(torch.utils.data.Dataset):
+def sample_sphere(d, num_points, radius):
+    """
+    Generate random points on a d-dimensional unit sphere.
 
-#     def __init__(self, n_points=1, dim=3, return_basis=False):
-#         self.return_basis = return_basis
-#         self.n_points = n_points
-#         self.dim = dim
+    Args:
+        d (int): The dimension of the sphere.
+        num_points (int): The number of points to generate.
+        radius (float): The radius of the sphere.
 
-#         if return_basis:
-#             self.basis = torch.eye(dim)
+    Returns:
+        numpy.ndarray: An array of shape (num_points, d) containing the generated points.
+    """
 
-#     def __len__(self):
-#         return sys.maxsize
+    points = np.random.randn(num_points, d)
+    points /= np.linalg.norm(points, axis=1, keepdims=True)
+    points *= radius
 
-#     def __getitem__(self, idx):
-#         points = torch.randn(self.n_points, self.dim)
-#         if self.return_basis:
-#             points = torch.cat([self.basis, points], dim=0)
-#         return points
-
-
-# def load_random_points_dataset(
-#     n_points=1, dim=3, batch_size=128, num_workers=0, num_prefetch=0, return_basis=True,
-# ):
-
-#     train = RandomPoints(n_points=n_points, dim=dim, return_basis=return_basis)
-#     train_loader = batchloader.BatchLoader(
-#         train,
-#         batch_size=batch_size,
-#         num_workers=num_workers,
-#         n_prefetch=num_prefetch,
-#         shuffle=True,
-#     )
-#     return {
-#         "train_loader": train_loader,
-#         "val_loader": None,
-#         "test_loader": None,
-#     }
+    return points.astype(np.float32)
 
 
-def is_inside_sphere(x, r):
-    return (x**2).sum(-1) < r**2
+class SpheresDataset(data.Dataset):
+
+    def __init__(self, num_points=1024, train=True, radius_rng=(0.2, 1.0)):
+        self.num_points = num_points
+        self.train = train
+        self.min_radius, self.max_radius = radius_rng
+
+    def __getitem__(self, index):
+        radius = np.random.uniform(self.min_radius, self.max_radius)
+        return sample_sphere(
+            3, self.num_points, radius
+        ), radius
+
+    def __len__(self):
+        return 100000
 
 
-CATEGORIES=['sphere']
-
-def generate_objects_dataset():
-
-    n_train = 1000
-    n_per_category = n_train // len(CATEGORIES)
-    data = []
-
-    
+def load_random_spheres_dataset(n_points=1024, batch_size=32, num_workers=0, radius_rng=(0.2, 1.0)):
+    train = SpheresDataset(num_points=n_points, radius_rng=radius_rng)
+    train_loader = data.DataLoader(
+        train,
+        batch_size=batch_size,
+        num_workers=num_workers,
+    )
+    return {
+        "train_loader": train_loader,
+        "val_loader": None,
+        "test_loader": None,
+    }

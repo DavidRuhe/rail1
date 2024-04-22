@@ -51,9 +51,9 @@ class PointConv(nn.Module):
 
 
 class PointNet(nn.Module):
-    def __init__(self, cat_pos=True, kmeans=False):
+    def __init__(self, channels_out=40, cat_pos=True, kmeans=False):
         super().__init__()
-
+        self.channels_out = channels_out
         self.cat_pos = cat_pos
         self.kmeans = kmeans
 
@@ -89,7 +89,7 @@ class PointNet(nn.Module):
             nn.BatchNorm1d(256),
             nn.ReLU(True),
             nn.Dropout(0.5),
-            nn.Linear(256, 40),
+            nn.Linear(256, self.channels_out),
         )
 
     def forward(self, all_points, idx):
