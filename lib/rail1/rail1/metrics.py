@@ -13,6 +13,19 @@ def figure_key(metric_dicts, is_training, key):
 
 
 def accuracy(metric_dicts, is_training):
+    """
+    Calculates the accuracy metric for a given set of predictions and targets.
+
+    Args:
+        metric_dicts (dict): A dictionary containing the keys "logits" and "targets", which are lists of tensors.
+        is_training (bool): A flag indicating whether the model is in training mode.
+
+    Returns:
+        dict: A dictionary containing the accuracy metric.
+
+    Raises:
+        AssertionError: If the dimensions of the targets and predictions are not as expected.
+    """
     if not metric_dicts["logits"] and not metric_dicts["targets"]:
         return {}
     predictions = torch.cat(metric_dicts["logits"])
@@ -20,6 +33,4 @@ def accuracy(metric_dicts, is_training):
     assert targets.dim() == 1
     assert predictions.dim() == 2
     assert len(targets) == len(predictions)
-    return {
-        "accuracy": (predictions.argmax(dim=-1) == targets).float().mean()
-    }
+    return {"accuracy": (predictions.argmax(dim=-1) == targets).float().mean()}

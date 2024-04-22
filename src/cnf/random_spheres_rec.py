@@ -27,7 +27,7 @@ def forward_and_loss_fn(batch, model):
 
     loss = F.binary_cross_entropy_with_logits(logits, labels)
 
-    return loss, {"logits": logits, "labels": labels}
+    return loss, {"logits": logits, "targets": labels}
 
 
 @torch.no_grad()
