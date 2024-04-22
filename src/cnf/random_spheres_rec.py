@@ -53,7 +53,7 @@ def main(config):
     )
     metric_fns = [
         functools.partial(rail1.metrics.mean_key, key="loss"),
-        rail1.metrics.accuracy,
+        rail1.metrics.binary_accuracy,
     ]
 
     rail1.fit(

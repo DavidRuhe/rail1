@@ -49,5 +49,5 @@ def load_random_spheres_dataset(n_points=1024, batch_size=32, num_workers=0, rad
     return {
         "train_loader": train_loader,
         "val_loader": None,
-        "test_loader": None,
+        "test_loader": train_loader,
     }
