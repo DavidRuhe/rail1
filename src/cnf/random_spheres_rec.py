@@ -64,6 +64,7 @@ def main(config):
         forward_and_loss_fn=forward_and_loss_fn,
         logging_fn=logging_fn,
         **config["fit"],
+        metrics_fns=metric_fns,
     )
 
 
