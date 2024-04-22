@@ -31,7 +31,7 @@ class SpheresDataset(data.Dataset):
         self.jitter = jitter
 
     def __getitem__(self, index):
-        radius = np.random.uniform(self.min_radius, self.max_radius) + np.random.uniform(-1, 1) * self.jitter
+        radius = np.random.uniform(self.min_radius - self.jitter, self.max_radius + self.jitter) + np.random.uniform(-1, 1) * self.jitter
         return sample_sphere(
             3, self.num_points, radius
         ), radius

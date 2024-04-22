@@ -268,8 +268,6 @@ class AutoEncoder(nn.Module):
 
         # cross attend from decoder queries to latents
         queries_embeddings = self.point_embed(queries)
-
-        x = x.repeat(2, 1, 1)
         latents = self.decoder_cross_attn(queries_embeddings, context = x)
 
         # optional decoder feedforward
@@ -471,7 +469,7 @@ def ae_d512_m64(N=1024):
 def ae_d256_m512(N=1024):
     return create_autoencoder(dim=256, M=512, N=N, determinisitc=True)
 
-def ae_d128_m512(N=1024):
+def     ae_d128_m512(N=1024):
     return create_autoencoder(dim=128, M=512, N=N, determinisitc=True)
 
 def ae_d128_m128(N=1024):

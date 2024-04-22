@@ -9,6 +9,7 @@ import torchvision
 
 import datasets
 import models
+import plotly.graph_objects as go
 
 
 
@@ -25,6 +26,8 @@ def forward_and_loss_fn(batch, model):
 
     pc = x_pos
     queries = torch.cat([x_pos, x_neg], dim=0)
+    pc = pc.repeat(2, 1, 1)
+
     logits = model(pc, queries)['logits']
 
 
@@ -38,9 +41,56 @@ def forward_and_loss_fn(batch, model):
     return loss, {"logits": logits, "targets": labels}
 
 
+def plotly_volume(values):
+    if isinstance(values, torch.Tensor):
+        values = values.cpu().numpy()
+
+    assert values.ndim == 3
+
+    x, y, z = np.indices(np.array(values.shape) + 1) - 0.5
+
+    vol = go.Volume(
+        x=x.flatten(),
+        y=y.flatten(),
+        z=z.flatten(),
+        value=values.flatten(),
+        isomin=0.1,
+        isomax=0.9,
+        opacity=0.1,
+        surface_count=20,
+    )
+
+    return go.Figure(data=vol)
+    
+
+
+
+
 @torch.no_grad()
-def eval_batch(batch, batch_idx, outputs, *, validation=False):
-    return
+def eval_batch(points, batch_idx, outputs, *, model, validation=False):
+    if batch_idx > 0:
+        return
+    
+    points, radius = points
+
+    outputs["points"] = points[0]
+
+    # 3d grid
+    linspace = torch.linspace(-1, 1, 64, device=points.device, dtype=points.dtype)
+    grid = torch.stack(
+        torch.meshgrid(linspace, linspace, linspace, indexing="ij"), dim=-1
+    )
+    grid = grid.reshape(-1, 3)
+
+    is_surface = model.forward(points[:1], grid[None])
+
+    logits = is_surface['logits']
+
+    outputs['volume'] = plotly_volume(logits.view(64, 64, 64))
+
+
+    return outputs
+
 
 def main(config):
     run_dir = config["run_dir"]
@@ -73,6 +123,7 @@ def main(config):
         logging_fn=logging_fn,
         **config["fit"],
         metrics_fns=metric_fns,
+        eval_batch_fn=functools.partial(eval_batch, model=model),
     )
 
 
