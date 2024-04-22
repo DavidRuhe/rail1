@@ -24,13 +24,14 @@ def sample_sphere(d, num_points, radius):
 
 class SpheresDataset(data.Dataset):
 
-    def __init__(self, num_points=1024, train=True, radius_rng=(0.2, 1.0)):
+    def __init__(self, num_points=1024, train=True, radius_rng=(0.2, 1.0), jitter=1/32):
         self.num_points = num_points
         self.train = train
         self.min_radius, self.max_radius = radius_rng
+        self.jitter = jitter
 
     def __getitem__(self, index):
-        radius = np.random.uniform(self.min_radius, self.max_radius)
+        radius = np.random.uniform(self.min_radius, self.max_radius) + np.random.uniform(-1, 1) * self.jitter
         return sample_sphere(
             3, self.num_points, radius
         ), radius
