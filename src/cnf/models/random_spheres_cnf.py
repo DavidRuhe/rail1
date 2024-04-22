@@ -16,10 +16,10 @@ class RandomSpheresCNF(nn.Module):
             input_conditioning_dim=40,
         )
 
-    def forward(self, x_pos, x_neg, idx):
+    def forward(self, queries, points, idx):
 
-        z = self.backbone(x_pos, idx)
+        z = self.backbone(points, idx)
 
-        result = self.cnf(torch.cat([x_pos, x_neg], dim=0), z.repeat(2, 1))
+        result = self.cnf(queries, z)
         return result
 

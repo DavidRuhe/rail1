@@ -21,7 +21,7 @@ config = {
         radius_rng=(0.2, 1.0),
     ),
     # "model": dict(name="pointnetpp_clean"),
-    "model": dict(name="ae_d128_m128"),
+    "model": dict(name="pointnet_cnf"),
     "optimizer": {"name": "adam", "lr": 1e-3},
     # "scheduler": dict(
     #     name="CosineAnnealingLR",
@@ -29,7 +29,7 @@ config = {
     #     warmup_steps=1000,
     #     decay_steps=90_000,
     # ),
-    "fit": {"max_steps": 100_000, "print_interval": 32, "limit_val_batches": float('inf'), "clip_grad_norm": 1.0},
+    "fit": {"max_steps": 100_000, "print_interval": 32, "limit_val_batches": float('inf')},
     "parameters": {"seed": {"values": [0]}},
     # "cluster": dict(
     #     address="snellius",

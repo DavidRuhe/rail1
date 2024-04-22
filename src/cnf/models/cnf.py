@@ -107,7 +107,7 @@ class ConditionalNeuralField(nn.Module):
         else:
             conditioning_hidden_dim = None
 
-        self.input_layer = nn.Linear(input_dim + conditioning_hidden_dim, hidden_dims[0])
+        self.input_layer = nn.Linear(input_dim, hidden_dims[0])
         self.network = nn.ModuleList()
         for i in range(len(hidden_dims) - 1):
             self.network.append(
@@ -126,8 +126,7 @@ class ConditionalNeuralField(nn.Module):
     def forward_conditional(self, x, c):
         c = self.c_emb(c)
         c0 = c
-        input = torch.cat([c[:, None].expand(-1, x.size(1), -1), x], dim=-1)
-        x = self.activation(self.input_layer(input))
+        x = self.activation(self.input_layer(x))
         for i, layer in enumerate(self.network):
             x = self.activation(layer(x, c))
             c = self.activation(self.modulator[i](torch.cat([c0, c], dim=-1)))
