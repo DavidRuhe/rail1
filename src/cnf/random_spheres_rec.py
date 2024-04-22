@@ -75,7 +75,7 @@ def eval_batch(points, batch_idx, outputs, *, model, validation=False):
 
     keep = grid[logits > 0]
 
-    outputs['x_pos_surface'] = keep
+    outputs['points_surface'] = keep
 
 
     return outputs
