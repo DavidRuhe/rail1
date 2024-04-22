@@ -41,31 +41,14 @@ def forward_and_loss_fn(batch, model):
     return loss, {"logits": logits, "targets": labels}
 
 
-def plotly_volume(values):
-    if isinstance(values, torch.Tensor):
-        values = values.cpu().numpy()
-
+def matplotlib_volume(values):
+    values = values.detach().numpy()
     assert values.ndim == 3
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection="3d")
+    ax.voxels(values > 0, edgecolor="k")
 
-    x, y, z = np.indices(np.array(values.shape) + 1) - 0.5
-
-    print(values.max())
-
-    vol = go.Volume(
-        x=x.flatten(),
-        y=y.flatten(),
-        z=z.flatten(),
-        value=values.flatten(),
-        isomin=0,
-        isomax=1,
-        opacity=0.1,
-        surface_count=20,
-    )
-
-    return go.Figure(data=vol)
-    
-
-
+    return fig
 
 
 @torch.no_grad()
@@ -88,7 +71,13 @@ def eval_batch(points, batch_idx, outputs, *, model, validation=False):
 
     logits = is_surface['logits']
 
-    outputs['volume'] = plotly_volume(logits.view(64, 64, 64))
+    # outputs['volume'] = matplotlib_volume(logits.view(64, 64, 64))
+
+    logits = logits.squeeze(0)
+
+    keep = grid[logits > 0]
+
+    outputs['points_surface'] = keep
 
 
     return outputs
@@ -115,7 +104,7 @@ def main(config):
         functools.partial(rail1.metrics.mean_key, key="loss"),
         rail1.metrics.binary_accuracy,
         functools.partial(rail1.metrics.figure_key, key="points"),
-        functools.partial(rail1.metrics.figure_key, key="volume"),
+        functools.partial(rail1.metrics.figure_key, key="points_surface"),
     ]
 
     rail1.fit(
