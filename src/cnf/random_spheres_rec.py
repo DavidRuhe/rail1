@@ -51,10 +51,10 @@ def main(config):
     logging_fn = rail1.utils.get_logging_fn(
         logger=rail1.loggers.WANDBLogger() if config["wandb"] else None
     )
-    # metric_fns = [
-    #     functools.partial(rail1.metrics.mean_key, key="loss"),
-    #     functools.partial(rail1.metrics.figure_key, key="img_grid"),
-    # ]
+    metric_fns = [
+        functools.partial(rail1.metrics.mean_key, key="loss"),
+        rail1.metrics.accuracy,
+    ]
 
     rail1.fit(
         run_dir,
