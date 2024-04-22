@@ -151,7 +151,7 @@ def compute_parameter_norm(model, norm_type=2):
 
 
 def train_step(
-    train_state, model, optimizer, forward_and_loss_fn, batch, print_interval=32
+    train_state, model, optimizer, forward_and_loss_fn, batch, print_interval=32, clip_grad_norm=float('inf')
 ):
     model.train()
     batch = to_device(batch, train_state["device"])
@@ -170,7 +170,7 @@ def train_step(
     # else:
 
     parameter_norm = compute_parameter_norm(model)
-    gradient_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), float("inf"))
+    gradient_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), clip_grad_norm)
 
     result = {}
     result["parameter_norm"] = parameter_norm
@@ -210,6 +210,7 @@ def fit(
     limit_val_batches=float("inf"),
     max_steps=1,
     max_time=None,
+    clip_grad_norm=float('inf'),
 ):
     if max_time is not None:  # pragma: no cover
         raise NotImplementedError("max_time is not implemented yet.")
@@ -269,6 +270,7 @@ def fit(
                 forward_and_loss_fn,
                 batch,
                 print_interval,
+                clip_grad_norm,
             )
 
             if scheduler is not None:

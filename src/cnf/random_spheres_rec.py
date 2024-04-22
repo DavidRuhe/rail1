@@ -112,6 +112,8 @@ def main(config):
     metric_fns = [
         functools.partial(rail1.metrics.mean_key, key="loss"),
         rail1.metrics.binary_accuracy,
+        functools.partial(rail1.metrics.figure_key, key="points"),
+        functools.partial(rail1.metrics.figure_key, key="volume"),
     ]
 
     rail1.fit(

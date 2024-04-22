@@ -30,6 +30,7 @@ config = {
         "print_interval": 100,
         "limit_val_batches": float("inf"),
         "val_check_interval": 4096,
+        "clip_grad_norm": 1.0,
     },
     "parameters": {"seed": {"values": [0]}},
 }
