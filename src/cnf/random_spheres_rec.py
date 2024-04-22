@@ -42,6 +42,7 @@ def forward_and_loss_fn(batch, model):
 
 
 def plotly_volume(values):
+    values = values.tanh()
     if isinstance(values, torch.Tensor):
         values = values.cpu().numpy()
 
@@ -54,8 +55,8 @@ def plotly_volume(values):
         y=y.flatten(),
         z=z.flatten(),
         value=values.flatten(),
-        isomin=0.1,
-        isomax=0.9,
+        isomin=0,
+        isomax=1,
         opacity=0.1,
         surface_count=20,
     )
