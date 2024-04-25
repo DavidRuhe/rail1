@@ -1,5 +1,5 @@
 config = {
-    "name": "random_spheres_reg",
+    "name": "random_shapes_reg",
     "project": "cnf",
     "entity": "druhe",
     "method": "grid",
@@ -8,14 +8,14 @@ config = {
     "command": [
         "python",
         "-u",
-        "random_spheres_reg.py",
+        "random_shapes_reg.py",
         '/'.join(__file__.split('/')[-2:]),
         "${args}",
     ],
     "seed": 0,
     "continue": None,
     "dataset": dict(
-        name="random_spheres",
+        name="random_shapes",
         num_points=1024,
         batch_size=32,
     ),

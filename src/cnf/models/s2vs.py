@@ -276,12 +276,11 @@ class AutoEncoder(nn.Module):
         
         return self.to_outputs(latents)
 
-    def forward(self, pc, queries):
+    def forward(self, queries, pc, _):
         x = self.encode(pc)
-
         o = self.decode(x, queries).squeeze(-1)
 
-        return {'logits': o}
+        return o
 
 class KLAutoEncoder(nn.Module):
     def __init__(
@@ -469,7 +468,7 @@ def ae_d512_m64(N=1024):
 def ae_d256_m512(N=1024):
     return create_autoencoder(dim=256, M=512, N=N, determinisitc=True)
 
-def     ae_d128_m512(N=1024):
+def ae_d128_m512(N=1024):
     return create_autoencoder(dim=128, M=512, N=N, determinisitc=True)
 
 def ae_d128_m128(N=1024):

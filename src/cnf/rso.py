@@ -113,7 +113,7 @@ def main(config):
     dataset_config = config["dataset"]
     data = getattr(datasets, dataset_config.pop("name"))(**dataset_config)
     model = getattr(models, config["model"].pop("name"))(
-        n_points=dataset_config["n_points_per_shape"], **config["model"]
+        num_points=dataset_config["num_points_per_shape"], **config["model"]
     )
     optimizer = getattr(rail1.optimizers, config["optimizer"].pop("name"))(
         model, **config["optimizer"]

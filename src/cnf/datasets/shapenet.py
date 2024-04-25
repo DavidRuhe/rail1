@@ -338,10 +338,10 @@ class PartialPointCloudField(Field):
             valid_mask = np.ones(len(points), dtype=bool)
             valid_mask[crop_idx] = 0
 
-            remain_points = points[valid_mask]
+            remainum_points = points[valid_mask]
 
             data = {
-                None: remain_points,
+                None: remainum_points,
             }
 
         elif "centerz" in self.partial_type:
@@ -380,10 +380,10 @@ class PartialPointCloudField(Field):
             valid_mask = np.ones(len(points), dtype=bool)
             valid_mask[crop_idx] = 0
 
-            remain_points = points[valid_mask]
+            remainum_points = points[valid_mask]
 
             data = {
-                None: remain_points,
+                None: remainum_points,
             }
 
         elif self.partial_type == "randomy_random":
@@ -414,10 +414,10 @@ class PartialPointCloudField(Field):
             valid_mask = np.ones(len(points), dtype=bool)
             valid_mask[crop_idx] = 0
 
-            remain_points = points[valid_mask]
+            remainum_points = points[valid_mask]
 
             data = {
-                None: remain_points,
+                None: remainum_points,
             }
 
         if self.transform is not None:

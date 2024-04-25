@@ -50,9 +50,12 @@ def binary_accuracy(metric_dicts, is_training):
     Raises:
         AssertionError: If the dimensions of the targets and predictions are not as expected.
     """
+    if not is_training:
+        assert metric_dicts["logits"] and metric_dicts["targets"]
     if not metric_dicts["logits"] and not metric_dicts["targets"]:
         return {}
     predictions = torch.cat(metric_dicts["logits"])
     targets = torch.cat(metric_dicts["targets"])
     assert targets.shape == predictions.shape
-    return {"binary_accuracy": (predictions > 0).float().eq(targets).float().mean()}
+    result =  {"binary_accuracy": (predictions > 0).float().eq(targets).float().mean()}
+    return result

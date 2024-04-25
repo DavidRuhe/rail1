@@ -6,35 +6,50 @@ from .embedded_mnist import load_embedded_mnist
 from .shapenet import load_shapenet
 from .shapenet_s2vs import ShapeNet, AxisScaling
 from .random_points import load_random_points_dataset
-from .random_surfaces import load_random_surface_dataset
+
+# from .random_surfaces import load_random_surface_dataset
 from .modelnet40_points import load_modelnet40_points
 from .modelnet40_stf import load_modelnet40stf_points
 from .modelnet40_kmeans import load_modelnet40stf_points_kmeans
 from .modelnet40_ply import load_modelnet40_ply
 from .random_spheres import load_random_spheres_dataset
+from .random_surfaces import load_random_shapes_dataset
+
+
+def random_shapes(*args, **kwargs):
+    return load_random_shapes_dataset(*args, **kwargs)
+
 
 def random_spheres(*args, **kwargs):
-    return load_random_spheres_dataset(
-        *args, **kwargs
-    )
+    return load_random_spheres_dataset(*args, **kwargs)
+
 
 def modelnet40_ply(**kwargs):
     return load_modelnet40_ply(**kwargs)
 
+
 def modelnet40_points(**kwargs):
     return load_modelnet40_points(**kwargs)
+
 
 def modelnet40stf_points(**kwargs):
     return load_modelnet40stf_points(**kwargs)
 
+
 def modelnet40stf_points_kmeans(**kwargs):
     return load_modelnet40stf_points_kmeans(**kwargs)
 
+
 def random_points(
-    num_points=1, dim=3, batch_size=128, num_workers=0, n_prefetch=0, return_basis=False,
+    num_points=1,
+    dim=3,
+    batch_size=128,
+    num_workers=0,
+    n_prefetch=0,
+    return_basis=False,
 ):
     return load_random_points_dataset(
-        n_points=num_points,
+        num_points=num_points,
         dim=dim,
         batch_size=batch_size,
         num_workers=num_workers,
@@ -44,13 +59,14 @@ def random_points(
 
 
 def random_surfaces(
-        n_points_per_shape=2048,
-        **kwargs,
+    num_points_per_shape=2048,
+    **kwargs,
 ):
     return load_random_surface_dataset(
-        n_points_per_shape=n_points_per_shape,
+        num_points_per_shape=num_points_per_shape,
         **kwargs,
     )
+
 
 def embedded_mnist(batch_size=128):
     return load_embedded_mnist(

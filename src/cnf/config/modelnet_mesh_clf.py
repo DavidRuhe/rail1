@@ -17,7 +17,7 @@ config = {
     "dataset": {
         "name": "random_points",
         "batch_size": 1024,
-        "n_points": 128,
+        "num_points": 128,
         "return_basis": False,
     },
     "model": {"name": "random_points_ae"},

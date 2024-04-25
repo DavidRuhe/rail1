@@ -34,14 +34,14 @@ class SpheresDataset(data.Dataset):
         radius = np.random.uniform(self.min_radius - self.jitter, self.max_radius + self.jitter) + np.random.uniform(-1, 1) * self.jitter
         return sample_sphere(
             3, self.num_points, radius
-        ), radius
+        ), radius, 0
 
     def __len__(self):
-        return 100000
+        return 1000
 
 
-def load_random_spheres_dataset(n_points=1024, batch_size=32, num_workers=0, radius_rng=(0.2, 1.0)):
-    train = SpheresDataset(num_points=n_points, radius_rng=radius_rng)
+def load_random_spheres_dataset(num_points=1024, batch_size=32, num_workers=0, radius_rng=(0.2, 1.0)):
+    train = SpheresDataset(num_points=num_points, radius_rng=radius_rng)
     train_loader = data.DataLoader(
         train,
         batch_size=batch_size,

@@ -129,7 +129,6 @@ def test_loop(
     # else:
     # metrics = model.test_metrics.compute()  # type: ignore
     # model.test_metrics.reset()  # type: ignore
-
     metrics = apply_metric_fns(metrics, metric_fns, is_training=False)
     metrics[f"s_it"] = s_it
 
@@ -379,13 +378,13 @@ def fit(
                 if test_metrics is not None:
                     metrics.update(test_metrics)
 
-                checkpoint.save_checkpoint(
-                    checkpoint_dir,
-                    model,
-                    train_state,
-                    optimizer,
-                    metrics=metrics,
-                )
+                # checkpoint.save_checkpoint(
+                #     checkpoint_dir,
+                #     model,
+                #     train_state,
+                #     optimizer,
+                #     metrics=metrics,
+                # )
 
             train_state["global_step"] += 1
             train_state["batch_index"] = (

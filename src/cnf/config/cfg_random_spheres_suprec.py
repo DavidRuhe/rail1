@@ -8,19 +8,19 @@ config = {
     "command": [
         "python",
         "-u",
-        "random_spheres_suprec.py",
+        "random_shapes_suprec.py",
         "/".join(__file__.split("/")[-2:]),
         "${args}",
     ],
     "seed": 0,
     "continue": None,
     "dataset": dict(
-        name="random_spheres", n_points=1024, batch_size=32, radius_rng=(0.2, 1.0)
+        name="random_spheres", num_points=1024, batch_size=32, radius_rng=(0.2, 0.8)
     ),
     # "model": dict(name="pointnetpp_clean"),
     "model": dict(
         # name="siren_cnf", 
-        name="cnf",
+        name="spheres_fnf",
         input_dim=3,
         # dim_hidden=256,
         # dim_out=1,

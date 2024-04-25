@@ -35,13 +35,13 @@ class Bilinear(nn.Module):
 class RandomPointsAE(nn.Module):
 
     def __init__(
-        self, n_points=1, input_dim=3, dims=(512, 512, 512), activation=nn.GELU()
+        self, num_points=1, input_dim=3, dims=(512, 512, 512), activation=nn.GELU()
     ):
         super().__init__()
         self.input_dim = input_dim
         self.dims = dims
         self.activation = activation
-        self.n_points = n_points
+        self.num_points = num_points
 
         layers = []
         layers.append(Bilinear(input_dim, dims[0]))
@@ -55,14 +55,14 @@ class RandomPointsAE(nn.Module):
 
         self.layers = nn.Sequential(*layers)
 
-        self.head = nn.Linear(dims[-1], 3 * n_points)
+        self.head = nn.Linear(dims[-1], 3 * num_points)
         # Initialize head with zeros
         init.zeros_(self.head.weight)
         init.constant_(self.head.bias, 1 / 3)
 
     def forward(self, cdist, basis):
         z = self.layers(cdist)
-        h = self.head(z).reshape(len(z), self.n_points, 3)
+        h = self.head(z).reshape(len(z), self.num_points, 3)
         output = torch.bmm(h, basis)
         return output
 
@@ -70,13 +70,13 @@ class RandomPointsAE(nn.Module):
 class RandomSurfacesMLP(nn.Module):
 
     def __init__(
-        self, n_points=1, input_dim=3, dims=(512, 512, 512), activation=nn.GELU()
+        self, num_points=1, input_dim=3, dims=(512, 512, 512), activation=nn.GELU()
     ):
         super().__init__()
         self.input_dim = input_dim
         self.dims = dims
         self.activation = activation
-        self.n_points = n_points
+        self.num_points = num_points
 
         layers = []
         layers.append(Bilinear(input_dim, dims[0]))
@@ -90,7 +90,7 @@ class RandomSurfacesMLP(nn.Module):
 
         self.layers = nn.Sequential(*layers)
 
-        self.head = nn.Linear(dims[-1], 3 * n_points)
+        self.head = nn.Linear(dims[-1], 3 * num_points)
         # Initialize head with zeros
         init.zeros_(self.head.weight)
         init.constant_(self.head.bias, 1 / 3)

@@ -18,7 +18,7 @@ class FPSNet(nn.Module):
         # self.k = k
 
         # self.weight_mlp = nn.Linear(input_channels, output_dim)
-        n_points = 2
+        num_points = 2
         self.mlps = nn.ModuleList(
             [
                 nn.Sequential(
@@ -26,7 +26,7 @@ class FPSNet(nn.Module):
                     Bilinear(C, C),
                     Bilinear(C, C)
                 )
-                for _ in range(n_points)
+                for _ in range(num_points)
             ]
         )
 

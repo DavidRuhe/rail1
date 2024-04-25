@@ -17,11 +17,14 @@ from .menghao_trafo_clean import PointTransformerClsClean
 from .hengshuang_trafo import PointTransformerCls as HSPointTransformerCls
 from .hengshuang_trafo_new import PointTransformerCls as HSPointTransformerClsNew
 from .random_spheres_cnf import RandomSpheresCNF
-from .siren import SirenCNF, SCNF
+from .fnf import CFNF
+from .spheres_fnf import SpheresFNF, spheres_fnf, shapes_fnf, conditional_pointnet_fnf
 from .s2vs import ae_d128_m512, ae_d512_m512, ae_d512_m128, ae_d128_m128
 
-def s2vs_ae_d128_m512():
-    return ae_d128_m512()
+
+def cfnf(*args, **kwargs):
+    return CFNF(*args, **kwargs)
+
 
 def pointnet_siren(*args, **kwargs):
     return SCNF(backbone='pointnet', *args, **kwargs)
@@ -76,11 +79,11 @@ def mnist_autoencoder():
     return Autoencoder(784, (512, 256, 128))
 
 
-def random_points_ae(n_points=1):
-    return RandomPointsAE(n_points, (3 + n_points) ** 2, (512, 512, 384))
+def random_points_ae(num_points=1):
+    return RandomPointsAE(num_points, (3 + num_points) ** 2, (512, 512, 384))
 
-def rso_baseline(n_points=1):
-    return RandomSurfacesMLP(n_points, 3, (512, 256, 128, 1))
+def rso_baseline(num_points=1):
+    return RandomSurfacesMLP(num_points, 3, (512, 256, 128, 1))
 
 
 def mnist_field_decoder():

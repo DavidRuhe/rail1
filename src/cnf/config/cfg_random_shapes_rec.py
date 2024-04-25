@@ -1,5 +1,5 @@
 config = {
-    "name": "random_spheres_reg",
+    "name": "random_shapes_rec",
     "project": "cnf",
     "entity": "druhe",
     "method": "grid",
@@ -8,19 +8,21 @@ config = {
     "command": [
         "python",
         "-u",
-        "random_spheres_reg.py",
+        "random_shapes_rec.py",
         '/'.join(__file__.split('/')[-2:]),
         "${args}",
     ],
     "seed": 0,
     "continue": None,
     "dataset": dict(
-        name="random_spheres",
+        name="random_shapes",
         num_points=1024,
         batch_size=32,
+        shapes=["cuboid", "sphere", "cylinder", "cone", "torus"],
     ),
     # "model": dict(name="pointnetpp_clean"),
-    "model": dict(name="pointnet", channels_out=1),
+    # "model": dict(name="pointnet_cnf"),
+    "model": dict(name="conditional_pointnet_fnf"),
     "optimizer": {"name": "adam", "lr": 1e-3},
     # "scheduler": dict(
     #     name="CosineAnnealingLR",
@@ -30,9 +32,9 @@ config = {
     # ),
     "fit": {"max_steps": 100_000, "print_interval": 32, "limit_val_batches": float('inf')},
     "parameters": {"seed": {"values": [0]}},
-    # "cluster": dict(
-    #     address="snellius",
-    #     directory="/home/druhe/rail1/src/cnf/",
-    #     slurm="--partition=gpu --time=24:00:00 --gpus-per-node=1",
-    # ),
+    "cluster": dict(
+        address="snellius",
+        directory="/home/druhe/rail1/src/cnf/",
+        slurm="--partition=gpu --time=24:00:00 --gpus-per-node=1",
+    ),
 }

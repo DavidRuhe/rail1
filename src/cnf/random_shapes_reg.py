@@ -11,54 +11,30 @@ import datasets
 import models
 
 
-def gram_schmidt(v):
-    u = v.clone()
-    for i in range(1, u.shape[1]):
-        z = torch.einsum('bij, bj->bi', u[:, :i], v[:, i]) / torch.einsum('bij, bij->bi', u[:, :i], u[:, :i]) 
-        u[:, i] = v[:, i] - torch.einsum('bi, bij->bj', z, u[:, :i])
-    u /= u.norm(dim=2, keepdim=True)
-    return u
-
 
 def forward_and_loss_fn(batch, model):
+    
+    x, rad = batch
+    idx0 = torch.randint(0, x.shape[1], (x.shape[0], x.shape[1]))
+    idx1 = torch.randint(0, idx0.shape[1], (x.shape[0], idx0.shape[1] // 2))
+    idx2 = torch.randint(0, idx1.shape[1], (x.shape[0], idx1.shape[1] // 2))
+    logits = model(x, (idx0, idx1, idx2))
 
-    basis = gram_schmidt(batch[:, :3])
-    batch = torch.cat([basis, batch], dim=1)
+    rad = rad.float()
 
-    dot = torch.einsum("bnd,bmd->bnm", batch, batch)
-    input = dot.reshape(len(dot), -1)
-
-    preds = model.forward(input, basis)
-    targets = batch[:, 3:]
-
-    loss = F.mse_loss(preds, targets, reduction="none").mean((1, 2))
-
-    return loss.mean(0), {
-        "loss": loss,
-    }
+    loss = F.mse_loss(logits.squeeze(-1), rad)
+    return loss, {}
 
 
 @torch.no_grad()
 def eval_batch(batch, batch_idx, outputs, *, validation=False):
-    # if batch_idx > 0:
     return
-
-    # predictions = outputs["predictions"].view(-1, 1, 28, 28)
-    # targets = outputs["targets"].view(-1, 1, 28, 28)
-    # images = torch.cat([predictions, targets], dim=-1)
-
-    # img_grid = plot_images(images)
-    # outputs["img_grid"] = img_grid
-
-    # return outputs
-
 
 def main(config):
     run_dir = config["run_dir"]
     dataset_config = config["dataset"]
     data = getattr(datasets, dataset_config.pop("name"))(**dataset_config)
-    model = getattr(models, config["model"].pop("name"))(
-        num_points=dataset_config["num_points"], **config["model"]
+    model = getattr(models, config["model"].pop("name"))(**config["model"]
     )
     optimizer = getattr(rail1.optimizers, config["optimizer"].pop("name"))(
         model, **config["optimizer"]

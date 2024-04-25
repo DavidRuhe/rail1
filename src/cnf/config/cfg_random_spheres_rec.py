@@ -16,7 +16,7 @@ config = {
     "continue": None,
     "dataset": dict(
         name="random_spheres",
-        n_points=1024,
+        num_points=1024,
         batch_size=32,
         radius_rng=(0.2, 1.0),
     ),

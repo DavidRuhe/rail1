@@ -11,15 +11,15 @@ class Bilinear(nn.Module):
         self.linear_1 = nn.Linear(input_dim, output_dim)
         # self.linear_1 = ZeroLinear(input_dim, output_dim)
         self.linear_2 = nn.Linear(input_dim, output_dim)
-        # self.a = nn.Parameter(torch.zeros(output_dim))
+        self.a = nn.Parameter(torch.zeros(output_dim))
 
     def forward(self, x1, x2=None):
         if x2 is None:
             x2 = x1
         h = self.linear_1(x2)
-        # b = h / (torch.sigmoid(self.a[None]) * (h.abs() - 1) + 1)
-        # return self.linear_2(x) * b
-        return torch.sigmoid(h) * self.linear_2(x1)
+        b = h / (torch.sigmoid(self.a[None]) * (h.abs() - 1) + 1)
+        return b * self.linear_2(x1)
+        # return torch.sigmoid(h) * self.linear_2(x1)
 
 
 
@@ -51,8 +51,8 @@ class FiLMLinear(nn.Module):
         #     self.beta = ZeroLinear(c_features, in_features)
             self.forward = self.forward_conditional  # type: ignore
 
-        # self.linear = Bilinear(in_features, out_features)
-        self.linear = nn.Linear(in_features, out_features)
+        self.linear = Bilinear(in_features, out_features)
+        # self.linear = nn.Linear(in_features, out_features)
         # self.custom_factor = custom_factor
         # self.cond_linear = nn.Linear(c_features, in_features)
         self.cond_linear = nn.Linear(c_features, out_features)
@@ -87,7 +87,7 @@ class ConditionalNeuralField(nn.Module):
         hidden_dims=(512, 512, 512, 512, 512),
         input_conditioning_dim=None,
         conditioning_hidden_dim=512,
-        activation=nn.ReLU(),
+        activation=Cosine(),
     ):
         super().__init__()
         self.input_dim = input_dim
@@ -99,9 +99,9 @@ class ConditionalNeuralField(nn.Module):
             self.forward = self.forward_conditional  # type: ignore
             # self.c_emb = nn.Linear(input_conditioning_dim, conditioning_hidden_dim)
             self.c_emb = nn.Sequential(
-                nn.Linear(input_conditioning_dim, conditioning_hidden_dim),
+                Bilinear(input_conditioning_dim, conditioning_hidden_dim),
                 activation,
-                nn.Linear(conditioning_hidden_dim, conditioning_hidden_dim),
+                Bilinear(conditioning_hidden_dim, conditioning_hidden_dim),
                 activation,
             )
         else:
@@ -116,20 +116,19 @@ class ConditionalNeuralField(nn.Module):
         # self.output_layer = Bilinear(hidden_dims[-1], output_dim)
         self.output_layer = nn.Linear(hidden_dims[-1], output_dim)
 
-        self.modulator = nn.ModuleList()
-        for i in range(len(hidden_dims) - 1):
-            self.modulator.append(
-                nn.Linear(2 * conditioning_hidden_dim, conditioning_hidden_dim)
-            )
+        # self.modulator = nn.ModuleList()
+        # for i in range(len(hidden_dims) - 1):
+        #     self.modulator.append(
+        #         nn.Linear(2 * conditioning_hidden_dim, conditioning_hidden_dim)
+        #     )
 
 
     def forward_conditional(self, x, c):
         c = self.c_emb(c)
-        c0 = c
         x = self.activation(self.input_layer(x))
         for i, layer in enumerate(self.network):
             x = self.activation(layer(x, c))
-            c = self.activation(self.modulator[i](torch.cat([c0, c], dim=-1)))
+            # c = self.activation(self.modulator[i](torch.cat([c0, c], dim=-1)))
         x = self.output_layer(x)
         return x
 

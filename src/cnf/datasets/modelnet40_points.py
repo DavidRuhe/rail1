@@ -128,8 +128,8 @@ def preprocess_modelnet40(num_points=2048):
     )
 
     print("Processing train set...")
-    memmap_train_points = np.lib.format.open_memmap(
-        os.path.join(output_path, "train_points.npy"),
+    memmap_trainum_points = np.lib.format.open_memmap(
+        os.path.join(output_path, "trainum_points.npy"),
         mode="w+",
         shape=(len(modelnet40_train), num_points, 3),
         dtype=np.float32,
@@ -151,10 +151,10 @@ def preprocess_modelnet40(num_points=2048):
             print(f"Could not sample mesh {idx} with label {mesh['label']}. Skipping.")
             continue
         points = points.squeeze(dim=0)
-        memmap_train_points[idx] = points.numpy()
+        memmap_trainum_points[idx] = points.numpy()
         memmap_train_labels[idx] = LABEL_TO_IDX[mesh["label"]]
 
-    del memmap_train_points
+    del memmap_trainum_points
     del memmap_train_labels
 
     print("Processing test set...")

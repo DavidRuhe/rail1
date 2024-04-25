@@ -12,9 +12,9 @@ DATAROOT = os.environ["DATAROOT"]
 
 class RandomPoints(torch.utils.data.Dataset):
 
-    def __init__(self, n_points=1, dim=3, return_basis=False):
+    def __init__(self, num_points=1, dim=3, return_basis=False):
         self.return_basis = return_basis
-        self.n_points = n_points
+        self.num_points = num_points
         self.dim = dim
 
         if return_basis:
@@ -24,17 +24,17 @@ class RandomPoints(torch.utils.data.Dataset):
         return sys.maxsize
 
     def __getitem__(self, idx):
-        points = torch.randn(self.n_points, self.dim)
+        points = torch.randn(self.num_points, self.dim)
         if self.return_basis:
             points = torch.cat([self.basis, points], dim=0)
         return points
 
 
 def load_random_points_dataset(
-    n_points=1, dim=3, batch_size=128, num_workers=0, num_prefetch=0, return_basis=True,
+    num_points=1, dim=3, batch_size=128, num_workers=0, num_prefetch=0, return_basis=True,
 ):
 
-    train = RandomPoints(n_points=n_points, dim=dim, return_basis=return_basis)
+    train = RandomPoints(num_points=num_points, dim=dim, return_basis=return_basis)
     train_loader = batchloader.BatchLoader(
         train,
         batch_size=batch_size,

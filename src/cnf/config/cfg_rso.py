@@ -17,7 +17,7 @@ config = {
     "dataset": {
         "name": "random_surfaces",
         "batch_size": 1024,
-        "n_points_per_shape": 64,
+        "num_points_per_shape": 64,
     },
     "model": dict(name='rso_baseline'),
     "optimizer": {"name": "adam", "lr": 1e-4},
