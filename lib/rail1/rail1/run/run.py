@@ -211,7 +211,7 @@ def main():  # pragma: no cover
         print("\nSuccessfully submitted sweep. To fire remotely, run:")
         print(f"ssh {cluster_config['address']}")
         print(
-            f"cd {directory} && git pull && git checkout {sweep_id} && sbatch {rel_path}\n"
+            f"cd {directory} && git fetch && git checkout {sweep_id} && sbatch {rel_path}\n"
         )
 
     else:
