@@ -119,7 +119,7 @@ class ConditionalPointNetFNF(nn.Module):
         super().__init__()
 
         self.mlp = nn.Sequential(
-            nn.Linear(3 + 32 + 33 * 32, 512),
+            nn.Linear(68, 512),
             nn.ReLU(),
             nn.Linear(512, 512),
             nn.ReLU(),
@@ -133,27 +133,26 @@ class ConditionalPointNetFNF(nn.Module):
             nn.Linear(512, 1),
         )
 
-        self.ff = FourierSeriesEmbedding(1 + 32, 32)
-        self.pointnet = PointNet(64)
+        self.ff = FourierSeriesEmbedding(4, 32)
+        self.pointnet = PointNet(64, in_features=128)
         # self.ff = SirenNet(33, 256, 256, 2)
 
 
     def forward(self, queries, pc, idx):
+        
+        features = torch.cat([pc, pc.norm(dim=-1, keepdim=True)], dim=-1)
 
-        z = self.pointnet(pc, idx)
+        ff = self.ff(features)
+
+        z = self.pointnet(pc, idx, features=ff)
 
         z = z[:, None].expand(-1, queries.size(1), -1)
 
         n = torch.norm(queries, dim=-1, keepdim=True)
-        # r = r[:, None].expand(-1, x.size(1), -1)
-        # s = torch.cat([n, r], dim=-1)
 
-        s = z[..., :32]
-        z = z[..., 32:]
-        s = torch.cat([n, s], dim=-1)
 
-        s = self.ff(s).reshape(*queries.shape[:-1], -1)
-        x = torch.cat([queries, z, s], dim=-1)
+
+        x = torch.cat([queries, z, n], dim=-1)
 
         return self.mlp(x)
 

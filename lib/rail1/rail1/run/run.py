@@ -189,7 +189,6 @@ def main():  # pragma: no cover
 
     if on_cluster:  # pragma: no cover
         cluster_config = config["cluster"]
-        # command = cluster_config["command"]
         slurm_arguments = cluster_config["slurm"]
         directory = cluster_config["directory"]
         all_values = [config["parameters"][k]["values"] for k in config["parameters"]]

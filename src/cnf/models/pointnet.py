@@ -51,11 +51,12 @@ class PointConv(nn.Module):
 
 
 class PointNet(nn.Module):
-    def __init__(self, channels_out=40, cat_pos=True, kmeans=False):
+    def __init__(self, channels_out=40, cat_pos=True, kmeans=False, in_features = 0):
         super().__init__()
         self.channels_out = channels_out
         self.cat_pos = cat_pos
         self.kmeans = kmeans
+        self.in_features = in_features
 
         self._build_model()
 
@@ -64,7 +65,7 @@ class PointNet(nn.Module):
         self.convnet.append(
             PointConv(
                 k=64,
-                mlp=conv_mlp.conv2d_mlp([3 + 3 * self.cat_pos, 64, 64, 128], bn=True),
+                mlp=conv_mlp.conv2d_mlp([self.in_features + 3 + 3 * self.cat_pos, 64, 64, 128], bn=True),
                 cat_pos=True,
             )
         )
@@ -92,7 +93,7 @@ class PointNet(nn.Module):
             nn.Linear(256, self.channels_out),
         )
 
-    def forward(self, all_points, idx):
+    def forward(self, all_points, idx, features=None):
         """PointNet forward pass.
 
         Args:
@@ -101,7 +102,10 @@ class PointNet(nn.Module):
         """
 
         pos = pctools.index(all_points, idx[0])
-        features = pos
+        if features is not None:
+            features = torch.cat([features, pos], dim=-1)
+        else:
+            features = pos
         pos_features = (pos, features)
 
         for i, module in enumerate(self.convnet):

@@ -23,8 +23,10 @@ class FourierSeriesEmbedding(nn.Module):
         # self.biases = nn.Parameter(torch.zeros(embedding_dim), requires_grad=True)
         # self.prenorm = nn.LayerNorm(in_dim)
         self.prenorm= nn.LayerNorm(in_dim)
+        self.prenorm = nn.Identity()
         # self.postnorm = nn.BatchNorm1d(embedding_dim)
         self.postnorm = nn.LayerNorm(in_dim)
+        self.postnorm = nn.Identity()
         # self.postnorm = nn.InstanceNorm1d(embedding_dim)
 
 
@@ -56,7 +58,7 @@ class FourierSeriesEmbedding(nn.Module):
         # [ ] Layernorm Transpose worse
         # different scaling.
         # Check grad norm with scaling 0
-        x = self.postnorm(x)
+        # x = self.postnorm(x)
         # x = self.postnorm(x.transpose(-2, -1)).transpose(-2, -1)
 
         x = x * 1 / (self.embedding_dim * torch.pi)
