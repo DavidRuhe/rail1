@@ -30,7 +30,7 @@ config = {
     #     warmup_steps=1000,
     #     decay_steps=90_000,
     # ),
-    "fit": {"max_steps": 100_000, "print_interval": 32, "limit_val_batches": float('inf')},
+    "fit": {"max_steps": 100_000, "print_interval": 32, "limit_val_batches": float('inf'), "clip_grad_norm": 1.0},
     "parameters": {"seed": {"values": [0]}},
     "cluster": dict(
         address="snellius",
