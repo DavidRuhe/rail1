@@ -141,7 +141,7 @@ class ConditionalPointNetFNF(nn.Module):
     def forward(self, queries, pc, idx):
         
         features = torch.cat([pc, pc.norm(dim=-1, keepdim=True)], dim=-1)
-
+        
         ff = self.ff(features)
 
         z = self.pointnet(pc, idx, features=ff)
