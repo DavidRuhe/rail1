@@ -134,17 +134,17 @@ class ConditionalPointNetFNF(nn.Module):
         )
 
         self.ff = FourierSeriesEmbedding(4, 32)
-        self.pointnet = PointNet(64, in_features=1)
+        self.pointnet = PointNet(64, in_features=128)
         # self.ff = SirenNet(33, 256, 256, 2)
 
 
     def forward(self, queries, pc, idx):
         
-        features = torch.cat([pc.norm(dim=-1, keepdim=True)], dim=-1)
+        features = torch.cat([pc, pc.norm(dim=-1, keepdim=True)], dim=-1)
         
-        # ff = self.ff(features)
+        ff = self.ff(features)
 
-        z = self.pointnet(pc, idx, features=features)
+        z = self.pointnet(pc, idx, features=ff)
 
         z = z[:, None].expand(-1, queries.size(1), -1)
 
