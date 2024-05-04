@@ -170,10 +170,12 @@ def train_step(
 
     parameter_norm = compute_parameter_norm(model)
     gradient_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), clip_grad_norm)
+    gradient_norm_clipped = torch.nn.utils.clip_grad_norm_(model.parameters(), clip_grad_norm)
 
     result = {}
     result["parameter_norm"] = parameter_norm
     result["gradient_norm"] = gradient_norm
+    result["clipped_gradient_norm"] = gradient_norm_clipped
 
     append_to_metrics_(result, train_state["train_metrics"])
 
@@ -306,6 +308,14 @@ def fit(
                 ) / len(train_state["train_metrics"]["gradient_norm"])
                 train_metrics["grad_norm_max"] = max(
                     train_state["train_metrics"]["gradient_norm"]
+                )
+
+                train_metrics["clipped_grad_norm_mean"] = sum(
+                    grad_norm
+                    for grad_norm in train_state["train_metrics"]["clipped_gradient_norm"]
+                ) / len(train_state["train_metrics"]["clipped_gradient_norm"])
+                train_metrics["clipped_grad_norm_max"] = max(
+                    train_state["train_metrics"]["clipped_gradient_norm"]
                 )
 
                 train_metrics["param_norm_mean"] = sum(
