@@ -119,6 +119,7 @@ class ConditionalPointNetFNF(nn.Module):
         super().__init__()
 
         self.mlp = nn.Sequential(
+            nn.LayerNorm(3 + 64 + 1),
             nn.Linear(68, 512),
             nn.ReLU(),
             nn.Linear(512, 512),
