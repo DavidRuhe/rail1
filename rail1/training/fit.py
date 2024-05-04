@@ -116,7 +116,7 @@ def test_loop(
 
 
 def train_step(
-    train_state, model, optimizer, forward_and_loss_fn, batch, print_interval=32
+    train_state, model, optimizer, forward_and_loss_fn, batch, print_interval=32, clip_grad_norm=float('inf')
 ):
     model.train()
     batch = to_device(batch, train_state["device"])
@@ -126,9 +126,11 @@ def train_step(
     optimizer.zero_grad(set_to_none=True)
     loss.backward()
 
-    gradient_norm = utils.clip_grad_norm_(model.parameters(), float('inf'))
+    gradient_norm = utils.clip_grad_norm_(model.parameters(), clip_grad_norm)
+    gradient_norm_clipped = utils.clip_grad_norm_(model.parameters(), clip_grad_norm)
 
     result['gradient_norm'] = gradient_norm
+    result['gradient_norm_clipped'] = gradient_norm_clipped
 
     optimizer.step()
 
@@ -172,6 +174,7 @@ def fit(
     limit_val_batches=float("inf"),
     max_steps=1,
     max_time=None,
+    clip_grad_norm=float('inf'),
 ):
     if max_time is not None:
         raise NotImplementedError("max_time is not implemented yet.")
@@ -229,7 +232,7 @@ def fit(
         # if train_state['global_step'] == 8:
         # breakpoint()
         train_step(
-            train_state, model, optimizer, forward_and_loss_fn, batch, print_interval
+            train_state, model, optimizer, forward_and_loss_fn, batch, print_interval, clip_grad_norm
         )
 
         if scheduler is not None:

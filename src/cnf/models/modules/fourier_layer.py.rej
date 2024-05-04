@@ -1,0 +1,19 @@
+diff a/src/cnf/models/modules/fourier_layer.py b/src/cnf/models/modules/fourier_layer.py	(rejected hunks)
+@@ -42,7 +42,7 @@ class FourierSeriesEmbedding(nn.Module):
+         # tanh, correct instance norm.
+         # x = self.prenorm(x)
+         B, N, C = x.shape
+-        x = self.prenorm(x.view(-1, self.in_dim))
++        # x = self.prenorm(x.view(-1, self.in_dim))
+         x_sin = torch.sin(x[..., None] * self.coefficients)
+         x_cos = torch.cos(x[..., None] * self.coefficients)
+         x = torch.cat([x_sin, x_cos], dim=-1)
+@@ -61,7 +61,7 @@ class FourierSeriesEmbedding(nn.Module):
+         # x = self.postnorm(x)
+         # x = self.postnorm(x.transpose(-2, -1)).transpose(-2, -1)
+ 
+-        x = x * 1 / (self.embedding_dim * torch.pi)
++        # x = x * 1 / (self.embedding_dim * torch.pi)
+ 
+         x = x.reshape(B, N, -1)
+         return x

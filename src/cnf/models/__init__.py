@@ -18,7 +18,7 @@ from .hengshuang_trafo import PointTransformerCls as HSPointTransformerCls
 from .hengshuang_trafo_new import PointTransformerCls as HSPointTransformerClsNew
 from .random_spheres_cnf import RandomSpheresCNF
 from .fnf import CFNF
-from .spheres_fnf import SpheresFNF, spheres_fnf, shapes_fnf, conditional_pointnet_fnf
+from .spheres_fnf import SpheresFNF, spheres_fnf, shapes_fnf, conditional_pointnet_fnf, bunny_fnf
 from .s2vs import ae_d128_m512, ae_d512_m512, ae_d512_m128, ae_d128_m128
 
 
