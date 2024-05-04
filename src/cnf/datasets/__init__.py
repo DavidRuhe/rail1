@@ -14,7 +14,10 @@ from .modelnet40_kmeans import load_modelnet40stf_points_kmeans
 from .modelnet40_ply import load_modelnet40_ply
 from .random_spheres import load_random_spheres_dataset
 from .random_surfaces import load_random_shapes_dataset
+from .bunny import load_bunny_dataset
 
+def bunny(*args, **kwargs):
+    return load_bunny_dataset(*args, **kwargs)
 
 def random_shapes(*args, **kwargs):
     return load_random_shapes_dataset(*args, **kwargs)
