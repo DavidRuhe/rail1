@@ -119,6 +119,7 @@ class ConditionalPointNetFNF(nn.Module):
         super().__init__()
 
         self.mlp = nn.Sequential(
+            nn.LayerNorm(3 + 64 + 1),
             nn.Linear(68, 512),
             nn.ReLU(),
             nn.Linear(512, 512),
@@ -166,7 +167,7 @@ class RFF(nn.Module):
         self.learnable_coefficients = learnable_coefficients
         self.std = std
 
-        self.learnable_coefficients = True
+        self.learnable_coefficients = False
         self.pi = math.pi
 
 
@@ -175,10 +176,13 @@ class RFF(nn.Module):
         # nn.init.zeros_(self.coefficients.bias)
         nn.init.normal_(self.coefficients.weight, mean=0.0, std=1)
         # nn.init.uniform_(self.coefficients.weight, -2 * self.pi * self.hidden_dim, 2 * self.pi * self.hidden_dim)
+        # self.postnorm = nn.LayerNorm(hidden_dim)
 
     def forward(self, x):
         # Scaling input by pi
-        x = 1/4 * self.pi * x * self.hidden_dim
+        x = self.pi * x * self.hidden_dim // 2
+
+        # x = x * self.hidden_dim
         
         if self.learnable_coefficients:
             x_proj = self.coefficients(x)
@@ -188,7 +192,7 @@ class RFF(nn.Module):
                 x_proj = self.coefficients(x)
 
         # Apply standard deviation scaling
-        # x_proj = self.std * x_proj
+        # x_proj = x_proj / self.hidden_dim
 
         # Calculate sin and cos projections
         sin_part = torch.sin(x_proj[..., :self.hidden_dim // 2])
@@ -197,7 +201,12 @@ class RFF(nn.Module):
         # return sin_part
 
         # Concatenate sin and cos parts
-        return torch.cat((sin_part, cos_part), dim=-1)
+        x =  torch.cat((sin_part, cos_part), dim=-1)
+
+        # x = x / (2 * math.pi * self.hidden_dim)
+
+        # x = self.postnorm(x)
+        return x
     
 
 class FNF(nn.Module):
@@ -207,6 +216,7 @@ class FNF(nn.Module):
         # self.ff = FourierSeriesEmbedding(3, 256)
         self.ff = RFF(1, 64, learnable_coefficients=False)
         self.mlp = nn.Sequential(
+            # nn.LayerNorm(192),
             nn.Linear(192, 512),
             nn.GELU(),
             nn.Linear(512, 512),
