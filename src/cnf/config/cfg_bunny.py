@@ -1,0 +1,37 @@
+config = {
+    "name": "bunny",
+    "project": "cnf",
+    "entity": "druhe",
+    "method": "grid",
+    "deterministic": False,
+    "device": "cuda",
+    "command": [
+        "python",
+        "-u",
+        "bunny.py",
+        '/'.join(__file__.split('/')[-2:]),
+        "${args}",
+    ],
+    "seed": 0,
+    "continue": None,
+    "dataset": dict(
+        name="bunny",
+    ),
+    # "model": dict(name="pointnetpp_clean"),
+    # "model": dict(name="pointnet_cnf"),
+    "model": dict(name="bunny_fnf"),
+    "optimizer": {"name": "adam", "lr": 1e-3},
+    # "scheduler": dict(
+    #     name="CosineAnnealingLR",
+    #     max_steps=100_000,
+    #     warmup_steps=1000,
+    #     decay_steps=90_000,
+    # ),
+    "fit": {"max_steps": 100_000, "print_interval": 32, "limit_val_batches": float('inf'), "clip_grad_norm": 1.0},
+    "parameters": {"seed": {"values": [0]}},
+    "cluster": dict(
+        address="snellius",
+        directory="/home/druhe/rail1/src/cnf/",
+        slurm="--partition=gpu --time=24:00:00 --gpus-per-node=1",
+    ),
+}

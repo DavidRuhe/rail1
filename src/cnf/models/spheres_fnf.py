@@ -166,15 +166,19 @@ class RFF(nn.Module):
         self.learnable_coefficients = learnable_coefficients
         self.std = std
 
-        # Embedding layer
-        self.coefficients = nn.Linear(input_dim, hidden_dim, bias=False)
-        nn.init.normal_(self.coefficients.weight, mean=0.0, std=hidden_dim // 2)
-        # Store pi
+        self.learnable_coefficients = True
         self.pi = math.pi
+
+
+        # Embedding layer
+        self.coefficients = nn.Linear(input_dim, self.hidden_dim, bias=False)
+        # nn.init.zeros_(self.coefficients.bias)
+        nn.init.normal_(self.coefficients.weight, mean=0.0, std=1)
+        # nn.init.uniform_(self.coefficients.weight, -2 * self.pi * self.hidden_dim, 2 * self.pi * self.hidden_dim)
 
     def forward(self, x):
         # Scaling input by pi
-        x = self.pi * x * 2
+        x = 1/4 * self.pi * x * self.hidden_dim
         
         if self.learnable_coefficients:
             x_proj = self.coefficients(x)
@@ -184,11 +188,13 @@ class RFF(nn.Module):
                 x_proj = self.coefficients(x)
 
         # Apply standard deviation scaling
-        x_proj = self.std * x_proj
+        # x_proj = self.std * x_proj
 
         # Calculate sin and cos projections
         sin_part = torch.sin(x_proj[..., :self.hidden_dim // 2])
         cos_part = torch.cos(x_proj[..., self.hidden_dim // 2:])
+        # sin_part = torch.sin(x_proj)
+        # return sin_part
 
         # Concatenate sin and cos parts
         return torch.cat((sin_part, cos_part), dim=-1)
