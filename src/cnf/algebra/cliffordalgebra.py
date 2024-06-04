@@ -148,8 +148,12 @@ class CliffordAlgebra(nn.Module):
     def _smooth_abs_sqrt(self, input, eps=1e-30):
         return (input**2 + eps) ** 0.25
 
-    def norm(self, mv, blades=None):
-        return self._smooth_abs_sqrt(self.q(mv, blades=blades))
+    def norm(self, mv, blades=None, safe_abs_sqrt=True):
+        if safe_abs_sqrt:
+            return self._smooth_abs_sqrt(self.q(mv, blades=blades))
+        else:
+            return torch.sqrt(torch.abs(self.q(mv, blades=blades)))
+
 
     def norms(self, mv, grades=None):
         if grades is None:
